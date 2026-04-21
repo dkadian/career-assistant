@@ -83,7 +83,6 @@ async def get_user_by_email(email: str, db: Connection = Depends(get_db)):
 
 import fitz  # PyMuPDF
 import io
-from app.services.ai_service import get_ai_response, get_ai_nonstream
 from app.services.resume_parser import parse_resume_from_content
 import json
 from typing import List

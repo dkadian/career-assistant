@@ -15,10 +15,15 @@ export const api = {
   getUserByEmail: (email) => req(`/profile/users/by-email/${email}`),
   getSessions: (userId) => req(`/sessions/user/${userId}`),
   createSession: (userId, title = 'Career Counselling Session') => req('/sessions/', { method: 'POST', body: JSON.stringify({ user_id: userId, title }) }),
+  updateSession: (sessionId, title) => req(`/sessions/${sessionId}`, { method: 'PUT', body: JSON.stringify({ title }) }),
   getSession: (sessionId) => req(`/sessions/${sessionId}`),
   deleteSession: (sessionId) => req(`/sessions/${sessionId}`, { method: 'DELETE' }),
-  sendMessage: async (sessionId, userId, message, stream=false) => {
-    const params = new URLSearchParams({ stream: stream ? 'true' : 'false' })
+  sendMessage: async (sessionId, userId, message, stream=false, useHf=false, useLm=false) => {
+    const params = new URLSearchParams({ 
+      stream: stream ? 'true' : 'false',
+      use_hf: useHf ? 'true' : 'false',
+      use_lm: useLm ? 'true' : 'false'
+    })
     const res = await fetch(BASE + '/chat/?' + params, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

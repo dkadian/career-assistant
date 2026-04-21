@@ -30,6 +30,9 @@ class SessionCreate(BaseModel):
     user_id: str
     title: Optional[str] = "Career Counselling Session"
 
+class SessionUpdate(BaseModel):
+    title: str
+
 class SessionOut(BaseModel):
     id: str
     user_id: str

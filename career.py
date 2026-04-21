@@ -7,7 +7,8 @@ from app.schemas import (
     InterviewPrepRequest, InterviewPrepResponse,
     CareerAdviceResponse,
 )
-from app.services.ai_service import get_career_advice_ai
+from app.services.ai_service_fixed import get_career_advice_ai
+from fastapi import Query
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ def _safe_parse_json(text: str) -> dict:
 
 
 @router.post("/resume-review", response_model=ResumeReviewResponse)
-async def review_resume(payload: ResumeReviewRequest, db = Depends(get_db)):
+async def review_resume(payload: ResumeReviewRequest, use_lm_studio: bool = Query(False), db = Depends(get_db)):
     """
     Submit resume text for AI-powered analysis.
     Returns strengths, improvement areas, actionable suggestions, and a score out of 10.

@@ -1,12 +1,13 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
-from dotenv import load_dotenv
 
 from app.routes import profile, chat, sessions
 from app.database import init_db
-
-load_dotenv()
+from career import router as career_router
 
 app = FastAPI(title="Career Counselling AI")
 
@@ -21,6 +22,7 @@ app.add_middleware(
 app.include_router(profile.router, prefix="/api/v1/profile")
 app.include_router(chat.router, prefix="/api/v1/chat")
 app.include_router(sessions.router, prefix="/api/v1/sessions")
+app.include_router(career_router, prefix="/api/v1/career")
 
 @app.on_event("startup")
 async def startup():

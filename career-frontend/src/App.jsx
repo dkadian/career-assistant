@@ -3,7 +3,7 @@ import { api } from './api'
 import AuthPage from './components/AuthPage'
 import ProfileModal from './components/ProfileModal'
 import Sidebar from './components/Sidebar'
-import ChatArea from './components/ChatArea'
+import ChatArea from './components/ChatArea.jsx'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -59,6 +59,13 @@ export default function App() {
       setMessages(session.messages || [])
     } catch (e) {}
   }
+  async function handleRenameSession(sessionId, newTitle) {
+    try {
+      const updated = await api.updateSession(sessionId, newTitle)
+      setSessions(prev => prev.map(s => s.id === sessionId ? updated : s))
+      if (activeSession?.id === sessionId) setActiveSession(updated)
+    } catch (e) {}
+  }
   async function handleDeleteSession(sessionId) {
     try {
       await api.deleteSession(sessionId)
@@ -90,9 +97,10 @@ export default function App() {
       <Sidebar user={user} profile={profile} sessions={sessions} activeSessionId={activeSession?.id}
         onNewSession={handleNewSession} onSelectSession={handleSelectSession}
         onEditProfile={() => setShowProfile(true)} onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
         onLogout={handleLogout} />
       <ChatArea key={refreshKey} user={user} session={activeSession} messages={messages} setMessages={setMessages}
-        onSessionsRefresh={refreshSessions} />
+        onSessionsRefresh={refreshSessions} onRenameSession={handleRenameSession} />
     </div>
   )
 }
