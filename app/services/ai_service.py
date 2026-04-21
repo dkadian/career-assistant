@@ -3,9 +3,14 @@ import json
 from typing import List, Dict, Optional, Union, AsyncGenerator
 import httpx
 from httpx import Timeout
+import torch
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+from accelerate import Accelerator
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openrouter/free"
+
+HF_MODEL = "CareerNinja/t5_large_1e-4_on_V3dataset"
 
 SYSTEM_PROMPT = """You are an expert career counsellor with 20+ years of experience.
 Help users with career planning, transitions, interviews, salary negotiation, skill gaps, and professional development.
@@ -19,6 +24,10 @@ Formatting rules for every response:
 - Do not output stray `*`, broken emphasis markers, or separator fragments like `--`.
 - Do not put multiple list items on one line.
 - Keep formatting simple and consistent."""
+
+# Lazy load HF model
+accelerator = Accelerator()
+hf_pipeline = None
 
 
 def get_openrouter_api_key() -> str:
@@ -84,11 +93,42 @@ async def get_ai_nonstream(
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"].strip()
 
+async def load_hf_model():
+    global hf_pipeline
+    if hf_pipeline is None:
+        print("Loading HF model...")
+        tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
+        model = AutoModelForSeq2SeqLM.from_pretrained(HF_MODEL)
+        model, tokenizer = accelerator.prepare(model, tokenizer)
+        hf_pipeline = pipeline("text2text-generation", model=model, tokenizer=tokenizer, device=accelerator.device, max_length=512, do_sample=False)
+        print("HF model loaded.")
+    return hf_pipeline
+
+async def get_hf_response(prompt: str) -> str:
+    pipe = await load_hf_model()
+    input_text = f"career guidance: {prompt}"
+    result = pipe(input_text, max_new_tokens=256, min_length=50)[0]['generated_text']
+    return result.replace(input_text, "").strip()
+
 async def get_ai_response(
     conversation_history: List[Dict[str, str]],
     profile: Optional[Dict] = None,
+    use_hf: bool = False,
     stream: bool = False,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str, None] | str:
+    if use_hf:
+        system = build_system_prompt(profile)
+        full_prompt = system + "\nHuman: " + conversation_history[-1]["content"]
+        try:
+            result = await get_hf_response(full_prompt)
+            if stream:
+                yield result
+            else:
+                return result
+        except Exception as e:
+            print(f"HF error: {e}")
+            yield "HF model unavailable, using OpenRouter."
+            use_hf = False
     if stream:
         api_key = get_openrouter_api_key()
         if not api_key:
@@ -138,7 +178,7 @@ async def get_ai_response(
             except Exception as e:
                 yield f"\n\nError: Unable to generate response ({str(e)}). Please try again."
     else:
-        yield await get_ai_nonstream(conversation_history, profile)
+        return await get_ai_nonstream(conversation_history, profile)
 
 async def get_career_advice_ai(prompt: str) -> str:
     gen = get_ai_response([{"role": "user", "content": prompt}], stream=False)
