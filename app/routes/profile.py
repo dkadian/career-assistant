@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from aiosqlite import Connection
 
 from app.database import get_db
-from app.schemas.schemas import UserCreate, UserOut, ProfileUpsert, ProfileOut
+from app.schemas.schemas import UserCreate, UserOut, ProfileUpsert, ProfileOut, UploadFile, File, ResumeUploadResponse
 
 router = APIRouter()
 
@@ -72,3 +72,100 @@ async def get_profile(user_id: str, db: Connection = Depends(get_db)):
     data["skills"] = json.loads(data.get("skills") or "[]")
     data["interests"] = json.loads(data.get("interests") or "[]")
     return ProfileOut(**data)
+
+@router.get("/users/by-email/{email}", response_model=UserOut)
+async def get_user_by_email(email: str, db: Connection = Depends(get_db)):
+    async with db.execute("SELECT * FROM users WHERE email = ?", (email,)) as cur:
+        row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return UserOut(**dict(row))
+
+import fitz  # PyMuPDF
+import io
+from app.services.ai_service import get_ai_response, get_ai_nonstream
+from app.services.resume_parser import parse_resume_from_content
+import json
+from typing import List
+
+async def extract_text_from_resume(file: UploadFile) -> str:
+    content = await file.read()
+    filename = file.filename.lower()
+    if filename.endswith('.pdf'):
+        doc = fitz.open(stream=content, filetype="pdf")
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        doc.close()
+        return text
+    elif filename.endswith('.docx'):
+        try:
+            from docx import Document
+        except ModuleNotFoundError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="DOCX support requires the python-docx package to be installed.",
+            ) from exc
+        doc = Document(io.BytesIO(content))
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return text
+    raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF or DOCX.")
+
+async def extract_skills_from_resume(user_id: str, resume_text: str, db: Connection):
+    prompt = f"""
+Extract the top 10 skills from this resume. Respond ONLY with JSON: {{"skills": ["skill1", "skill2"], "interests": ["interest1"]}}
+
+Resume:
+{resume_text[:4000]}
+"""
+    history = [{"role": "user", "content": prompt}]
+    full_reply = await get_ai_nonstream(history)
+    try:
+        parsed = json.loads(full_reply)
+        skills = parsed.get("skills", [])
+        interests = parsed.get("interests", [])
+        # Upsert to profile
+        skills_json = json.dumps(skills)
+        interests_json = json.dumps(interests)
+        now = datetime.now(timezone.utc).isoformat()
+        await db.execute("""
+            INSERT INTO user_profiles (user_id, skills, interests, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                skills = excluded.skills,
+                interests = excluded.interests,
+                updated_at = excluded.updated_at
+        """, (user_id, skills_json, interests_json, now))
+        await db.commit()
+        return ResumeUploadResponse(skills=skills, interests=interests, summary="Skills extracted and saved to profile")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+@router.post("/users/{user_id}/resume", response_model=ResumeUploadResponse)
+async def upload_resume(user_id: str, file: UploadFile = File(..., description="PDF or DOCX resume"), db: Connection = Depends(get_db)):
+    async with db.execute("SELECT id FROM users WHERE id = ?", (user_id,)) as cur:
+        user = await cur.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    content = await file.read()
+    parsed = await parse_resume_from_content(content, file.filename)
+    if 'error' in parsed:
+        raise HTTPException(status_code=400, detail=parsed['error'])
+    skills = parsed.get('skills', [])
+    interests = parsed.get('interests', [])
+    summary = parsed.get('summary', 'Resume parsed successfully')
+    parsed_json = json.dumps(parsed)
+    now = datetime.now(timezone.utc).isoformat()
+    skills_json = json.dumps(skills)
+    interests_json = json.dumps(interests)
+    await db.execute("""
+        INSERT INTO user_profiles (user_id, skills, interests, parsed_resume, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            skills = excluded.skills,
+            interests = excluded.interests,
+            parsed_resume = excluded.parsed_resume,
+            updated_at = excluded.updated_at
+        """, (user_id, skills_json, interests_json, parsed_json, now))
+    await db.commit()
+    return ResumeUploadResponse(skills=skills, interests=interests, summary=summary)

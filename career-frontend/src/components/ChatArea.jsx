@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { api } from '../api'
 
 const SUGGESTIONS = [
@@ -10,19 +12,78 @@ const SUGGESTIONS = [
   { icon: '🌱', label: 'Early career', msg: 'I just graduated. What are the best steps to start my career?' },
 ]
 
-function fmt(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^### (.+)$/gm, '<div style="font-weight:600;font-size:15px;margin:10px 0 4px">$1</div>')
-    .replace(/^- (.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0"><span style="color:var(--gold);flex-shrink:0">›</span><span>$1</span></div>')
-    .replace(/\n\n/g, '<div style="height:8px"></div>')
-    .replace(/\n/g, '<br/>')
+function normalizeMarkdown(text) {
+  const cleaned = text
+    .replace(/\r\n/g, '\n')
+    .replace(/(<br\s*\/?>)/gi, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/:--+\s*$/gm, ':')
+    .replace(/\|\s*[-:]+\s*\|/g, match => `\n${match}\n`)
+    .replace(/(\|[^\n]+\|)(?=\|)/g, '$1\n')
+    .replace(/\n{3,}/g, '\n\n')
+
+  const lines = cleaned.split('\n')
+  const normalized = []
+
+  for (let rawLine of lines) {
+    let line = rawLine.trim()
+
+    if (!line || /^([*-]|\|\*)$/.test(line)) {
+      continue
+    }
+
+    line = line
+      .replace(/^\*\s*(Week|Phase|Month|Step)\b\s*/i, '## $1 ')
+      .replace(/^\*\s*(Video|Tip|Tips|Example|Examples|Resources|Next Steps|Roadmap)\b:?\s*$/i, '### $1')
+      .replace(/^\s*[*-]?\s*o\s*[*-]?\s*\*?([^*\n:][^:\n]*):\*?\s*$/i, '- **$1:**')
+      .replace(/^\s*[*-]\s*\*?([^*\n:][^:\n]*):\*?\s*$/i, '- **$1:**')
+      .replace(/^\s*\d+\.\s+\*(.+?)\*?\s*$/i, (_, textPart) => `1. **${textPart.trim()}**`)
+      .replace(/(^|[\s(])\*([A-Za-z][A-Za-z0-9/+.# -]{1,40})\*(?=$|[\s),.:;!?])/g, '$1**$2**')
+      .replace(/(^|[\s(])\*([A-Za-z][A-Za-z0-9/+.# -]{1,40})(?=$|[\s),.:;!?])/g, '$1$2')
+      .replace(/(^|[\s(])([A-Za-z][A-Za-z0-9/+.# -]{1,40})\*(?=$|[\s),.:;!?])/g, '$1$2')
+
+    const shouldMergeIntoPrevious =
+      normalized.length > 0 &&
+      /^[-*]\s+(to|and|or|for|with|together|plus)\b/i.test(line) &&
+      !/^[-*]\s+\*\*/.test(normalized[normalized.length - 1]) &&
+      !/^(#{1,3}|\d+\.)\s/.test(normalized[normalized.length - 1])
+
+    if (shouldMergeIntoPrevious) {
+      normalized[normalized.length - 1] += ' ' + line.replace(/^[-*]\s+/, '')
+      continue
+    }
+
+    normalized.push(line)
+  }
+
+  return normalized.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+const markdownComponents = {
+  p: ({ children }) => <p style={{ margin: '0 0 10px', lineHeight: 1.75 }}>{children}</p>,
+  ul: ({ children }) => <ul style={{ margin: '6px 0 12px 20px', padding: 0, display: 'grid', gap: '8px' }}>{children}</ul>,
+  ol: ({ children }) => <ol style={{ margin: '6px 0 12px 20px', padding: 0, display: 'grid', gap: '8px' }}>{children}</ol>,
+  li: ({ children }) => <li style={{ lineHeight: 1.7 }}>{children}</li>,
+  h1: ({ children }) => <h1 style={{ fontSize: '20px', margin: '8px 0 10px', lineHeight: 1.3 }}>{children}</h1>,
+  h2: ({ children }) => <h2 style={{ fontSize: '18px', margin: '8px 0 10px', lineHeight: 1.35 }}>{children}</h2>,
+  h3: ({ children }) => <h3 style={{ fontSize: '16px', margin: '8px 0 8px', lineHeight: 1.4 }}>{children}</h3>,
+  strong: ({ children }) => <strong style={{ color: 'var(--text)' }}>{children}</strong>,
+  em: ({ children }) => <em style={{ color: 'var(--text2)' }}>{children}</em>,
+  code: ({ children }) => <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '5px', fontSize: '12px' }}>{children}</code>,
+  a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>{children}</a>,
+  hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border2)', margin: '12px 0' }} />,
+  table: ({ children }) => <div style={{ overflowX: 'auto', margin: '16px 0', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}><table style={{ width: '100%', borderCollapse: 'collapse', borderSpacing: 0, background: 'var(--surface2)', borderRadius: '12px', overflow: 'hidden' }}>{children}</table></div>,
+  thead: ({ children }) => <thead>{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children, index }) => <tr style={{ backgroundColor: index % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>{children}</tr>,
+  th: ({ children }) => <th style={{ textAlign: 'left', padding: '12px 16px', borderBottom: '1px solid var(--border2)', fontSize: '13px', color: 'var(--text)', fontWeight: 600, background: 'rgba(255,255,255,0.03)' }}>{children}</th>,
+  td: ({ children }) => <td style={{ verticalAlign: 'top', padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: '13px', lineHeight: 1.65, background: 'rgba(255,255,255,0.01)' }}>{children}</td>,
 }
 
 export default function ChatArea({ user, session, messages, setMessages, onSessionsRefresh }) {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+    const [refreshKey, setRefreshKey] = useState(0)
   const endRef = useRef(null)
   const taRef = useRef(null)
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -38,19 +99,71 @@ export default function ChatArea({ user, session, messages, setMessages, onSessi
     const msg = (text || input).trim()
     if (!msg || isTyping || !session) return
     setInput(''); if (taRef.current) taRef.current.style.height = 'auto'
-    setMessages(prev => [...prev, { role:'user', content:msg, created_at: new Date().toISOString(), id:'tmp-'+Date.now() }])
+    const userMsg = { role:'user', content:msg, created_at: new Date().toISOString(), id:'tmp-'+Date.now() }
+    setMessages(prev => [...prev, userMsg])
     setIsTyping(true)
     try {
-      const data = await api.sendMessage(session.id, user.id, msg)
-      setMessages(prev => [...prev, { role:'assistant', content:data.reply, created_at:data.created_at, id:data.message_id }])
+      const streamRes = await api.sendMessage(session.id, user.id, msg, true)
+      const asstMsg = { role:'assistant', content:'', created_at: new Date().toISOString(), id:'tmp-asst-'+Date.now() }
+      setMessages(prev => [...prev, asstMsg])
+      
+      const reader = streamRes.body.getReader()
+      const decoder = new TextDecoder()
+      let fullReply = ''
+      let buffer = ''
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) {
+            buffer += decoder.decode()
+          } else {
+            buffer += decoder.decode(value, {stream: true})
+          }
+
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') break
+              const delta = data
+              if (delta) {
+                fullReply += delta
+                setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m))
+              }
+            }
+          }
+
+          if (done) {
+            if (buffer.startsWith('data: ')) {
+              const data = buffer.slice(6)
+              if (data && data !== '[DONE]') {
+                fullReply += data
+                setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m))
+              }
+            }
+            break
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
       onSessionsRefresh()
     } catch(e) {
-      setMessages(prev => [...prev, { role:'assistant', content:'Error: ' + e.message, created_at: new Date().toISOString(), id:'err-'+Date.now() }])
-    } finally { setIsTyping(false) }
+      setMessages(prev => prev.slice(0, -1).concat({ role:'assistant', content: 'Error: ' + e.message, created_at: new Date().toISOString(), id:'err-'+Date.now() }))
+    } finally { 
+      setIsTyping(false) 
+    }
   }
 
-  const h = new Date().getHours()
+    const h = new Date().getHours()
   const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+
+  useEffect(() => {
+    // Force refresh on AI response to fix markdown rendering
+    setRefreshKey(Date.now())
+  }, [messages.length])
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
@@ -85,7 +198,11 @@ export default function ChatArea({ user, session, messages, setMessages, onSessi
                 {msg.role==='assistant' && <div style={{ width:'30px', height:'30px', borderRadius:'50%', flexShrink:0, background:'var(--surface2)', border:'1px solid var(--border2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cormorant Garamond',serif", fontSize:'14px', color:'var(--gold)' }}>P</div>}
                 <div style={{ display:'flex', flexDirection:'column', gap:'4px', maxWidth:'75%' }}>
                   <div style={{ padding:'12px 16px', borderRadius:'14px', fontSize:'14px', lineHeight:1.7, ...(msg.role==='user' ? { borderBottomRightRadius:'4px', background:'var(--gold)', color:'var(--bg)' } : { borderBottomLeftRadius:'4px', background:'var(--surface2)', border:'1px solid var(--border)', color:'var(--text)' }) }}>
-                    {msg.role==='assistant' ? <div dangerouslySetInnerHTML={{__html: fmt(msg.content)}} /> : msg.content}
+{msg.role==='assistant' ? (
+                      <ReactMarkdown key={refreshKey + msg.content.slice(0,10)} remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                        {normalizeMarkdown(msg.content)}
+                      </ReactMarkdown>
+                    ) : msg.content}
                   </div>
                   <div style={{ fontSize:'10px', color:'var(--text3)', padding:'0 4px', textAlign: msg.role==='user' ? 'right' : 'left' }}>
                     {new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
@@ -94,15 +211,7 @@ export default function ChatArea({ user, session, messages, setMessages, onSessi
                 {msg.role==='user' && <div style={{ width:'30px', height:'30px', borderRadius:'50%', flexShrink:0, background:'linear-gradient(135deg,var(--gold),var(--rust))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:600, color:'var(--bg)' }}>{initials}</div>}
               </div>
             ))}
-            {isTyping && (
-              <div style={{ display:'flex', gap:'10px', alignItems:'flex-end' }}>
-                <div style={{ width:'30px', height:'30px', borderRadius:'50%', flexShrink:0, background:'var(--surface2)', border:'1px solid var(--border2)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cormorant Garamond',serif", fontSize:'14px', color:'var(--gold)' }}>P</div>
-                <div style={{ padding:'14px 18px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'14px', borderBottomLeftRadius:'4px', display:'flex', gap:'5px', alignItems:'center' }}>
-                  {[0,1,2].map(i => <span key={i} style={{ display:'inline-block', width:'6px', height:'6px', background:'var(--text3)', borderRadius:'50%', animation:'bounce 1.2s infinite', animationDelay: i*0.2 + 's' }} />)}
-                </div>
-              </div>
-            )}
-          </>
+            </>
         )}
         <div ref={endRef} />
       </div>

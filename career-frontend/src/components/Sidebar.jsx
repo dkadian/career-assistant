@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Sidebar({ user, profile, sessions, activeSessionId, onNewSession, onSelectSession, onEditProfile, onDeleteSession }) {
+export default function Sidebar({ user, profile, sessions, activeSessionId, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onLogout }) {
   const [hoveredId, setHoveredId] = useState(null)
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
@@ -61,6 +61,27 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, onNe
           <div style={{ fontSize:'13px', color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name || 'Guest'}</div>
           <div style={{ fontSize:'11px', color:'var(--sage)', marginTop:'2px' }}>Online</div>
         </div>
+        {user && (
+          <button 
+            style={{ 
+              background:'none', 
+              border:'1px solid var(--border2)', 
+              color:'var(--text2)', 
+              padding:'6px 12px', 
+              borderRadius:'var(--radius-sm)', 
+              fontSize:'12px', 
+              fontWeight:500,
+              whiteSpace:'nowrap',
+              opacity: 0.8,
+              transition:'opacity 0.2s'
+            }} 
+            onClick={onLogout}
+            onMouseEnter={e => e.target.style.opacity = '1'}
+            onMouseLeave={e => e.target.style.opacity = '0.8'}
+          >
+            Log out
+          </button>
+        )}
       </div>
     </aside>
   )

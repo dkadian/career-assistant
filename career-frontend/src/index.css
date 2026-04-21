@@ -1,9 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0a0908; --surface: #131210; --surface2: #1c1a17;
-  --border: #2a2720; --border2: #3a3530;
+  --bg: #1a1a1a; --surface: #252525; --surface2: #2d2d2d;
+  --border: #404040; --border2: #505050;
   --gold: #d4a853; --gold-dim: #9a7a3a; --gold-glow: rgba(212,168,83,0.15);
-  --text: #f0ead8; --text2: #9a9080; --text3: #5a5248;
+  --text: #f0ead8; --text2: #b8b8b8; --text3: #707070;
   --rust: #c4633a; --sage: #7a9a6a; --radius: 14px; --radius-sm: 8px;
 }
 html, body, #root { height: 100%; overflow: hidden; }

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from './api'
-import AuthModal from './components/AuthModal'
+import AuthPage from './components/AuthPage'
 import ProfileModal from './components/ProfileModal'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
@@ -12,6 +12,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null)
   const [messages, setMessages] = useState([])
   const [showProfile, setShowProfile] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -29,12 +30,16 @@ export default function App() {
   async function loadSessions(userId) {
     try { const data = await api.getSessions(userId); setSessions(data) } catch (e) {}
   }
+
+  const refreshSessions = useCallback(() => {
+    if (user) loadSessions(user.id)
+  }, [user])
   async function loadProfile(userId) {
     try { const data = await api.getProfile(userId); setProfile(data) } catch (e) {}
   }
   async function handleAuth(userData) {
     setUser(userData)
-    await loadSessions(userData.id)
+    await Promise.all([loadSessions(userData.id), loadProfile(userData.id)])
     setShowProfile(true)
   }
   async function handleNewSession() {
@@ -44,6 +49,7 @@ export default function App() {
       setSessions(prev => [session, ...prev])
       setActiveSession(session)
       setMessages([])
+      setRefreshKey(k => k + 1)
     } catch (e) {}
   }
   async function handleSelectSession(sessionId) {
@@ -61,6 +67,16 @@ export default function App() {
     } catch (e) {}
   }
 
+  function handleLogout() {
+    localStorage.removeItem('userId')
+    localStorage.removeItem('userName')
+    setUser(null)
+    setSessions([])
+    setActiveSession(null)
+    setMessages([])
+    setProfile(null)
+  }
+
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <div style={{ width: '32px', height: '32px', border: '2px solid var(--border)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -69,13 +85,14 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-      {!user && <AuthModal onAuth={handleAuth} />}
-      {showProfile && user && <ProfileModal userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
+      {!user && <AuthPage onAuth={handleAuth} />}
+{showProfile && user && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
       <Sidebar user={user} profile={profile} sessions={sessions} activeSessionId={activeSession?.id}
         onNewSession={handleNewSession} onSelectSession={handleSelectSession}
-        onEditProfile={() => setShowProfile(true)} onDeleteSession={handleDeleteSession} />
-      <ChatArea user={user} session={activeSession} messages={messages} setMessages={setMessages}
-        onSessionsRefresh={() => user && loadSessions(user.id)} />
+        onEditProfile={() => setShowProfile(true)} onDeleteSession={handleDeleteSession}
+        onLogout={handleLogout} />
+      <ChatArea key={refreshKey} user={user} session={activeSession} messages={messages} setMessages={setMessages}
+        onSessionsRefresh={refreshSessions} />
     </div>
   )
 }

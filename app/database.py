@@ -31,6 +31,7 @@ async def init_db():
                 interests TEXT,         -- JSON array as string
                 career_goals TEXT,
                 location TEXT,
+                parsed_resume TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)

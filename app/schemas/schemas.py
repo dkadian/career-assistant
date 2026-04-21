@@ -1,19 +1,17 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
-
+from fastapi import UploadFile, File
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
-
 
 class UserOut(BaseModel):
     id: str
     name: str
     email: str
     created_at: datetime
-
 
 class ProfileUpsert(BaseModel):
     current_role: Optional[str] = None
@@ -24,16 +22,13 @@ class ProfileUpsert(BaseModel):
     career_goals: Optional[str] = None
     location: Optional[str] = None
 
-
 class ProfileOut(ProfileUpsert):
     user_id: str
     updated_at: datetime
 
-
 class SessionCreate(BaseModel):
     user_id: str
     title: Optional[str] = "Career Counselling Session"
-
 
 class SessionOut(BaseModel):
     id: str
@@ -42,7 +37,6 @@ class SessionOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-
 class MessageOut(BaseModel):
     id: str
     session_id: str
@@ -50,19 +44,22 @@ class MessageOut(BaseModel):
     content: str
     created_at: datetime
 
-
 class SessionWithMessages(SessionOut):
     messages: List[MessageOut] = []
-
 
 class ChatRequest(BaseModel):
     session_id: str
     user_id: str
     message: str
 
-
 class ChatResponse(BaseModel):
     session_id: str
     message_id: str
     reply: str
     created_at: datetime
+
+class ResumeUploadResponse(BaseModel):
+    skills: List[str]
+    interests: List[str]
+    summary: str
+
