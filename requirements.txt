@@ -12,3 +12,6 @@ python-docx
 python-multipart
 pdfplumber
 anthropic
+transformers
+torch
+accelerate

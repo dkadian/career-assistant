@@ -200,23 +200,26 @@ const carouselSlides = [
     },
     navActions: { display: 'flex', gap: '10px', flexWrap: 'wrap' },
     ghostBtn: {
-      padding: '10px 16px',
-      background: 'rgba(255,255,255,0.02)',
-      color: 'var(--text2)',
-      border: '1px solid var(--border2)',
+      padding: '12px 24px',
+      background: 'rgba(255,255,255,0.03)',
+      color: 'var(--text)',
+      border: '1px solid rgba(255,255,255,0.1)',
       borderRadius: '999px',
-      fontSize: '13px',
-      fontWeight: 500,
+      fontSize: '14px',
+      fontWeight: 600,
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(8px)',
     },
     goldBtn: {
-      padding: '10px 16px',
-      background: 'var(--gold)',
+      padding: '12px 24px',
+      background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
       color: 'var(--bg)',
       border: 'none',
       borderRadius: '999px',
-      fontSize: '13px',
+      fontSize: '14px',
       fontWeight: 700,
-      boxShadow: '0 12px 30px rgba(212,168,83,0.18)',
+      boxShadow: '0 12px 30px rgba(212,168,83,0.3)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     heroGrid: {
       display: 'grid',
@@ -226,13 +229,16 @@ const carouselSlides = [
       flex: 1,
     },
     heroPanel: {
-      border: '1px solid rgba(255,255,255,0.06)',
-      background: 'linear-gradient(180deg, rgba(37,37,37,0.9), rgba(24,24,24,0.92))',
-      borderRadius: '32px',
-      padding: '36px',
-      boxShadow: '0 32px 90px rgba(0,0,0,0.38)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'linear-gradient(180deg, rgba(37,37,37,0.7), rgba(24,24,24,0.85))',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '40px',
+      padding: '48px',
+      boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
       position: 'relative',
       overflow: 'hidden',
+      backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0)',
+      backgroundSize: '40px 40px',
     },
     heroGlow: {
       position: 'absolute',
@@ -311,12 +317,14 @@ const carouselSlides = [
     },
     sectionTitle: {
       fontFamily: "'Cormorant Garamond',serif",
-      fontSize: '54px',
+      fontSize: '64px',
       lineHeight: 1.05,
       color: 'var(--text)',
       fontWeight: 700,
-      maxWidth: '700px',
-      letterSpacing: '-0.5px',
+      maxWidth: '850px',
+      letterSpacing: '-1.5px',
+      marginBottom: '24px',
+      transition: 'all 0.5s ease',
     },
     body: {
       fontSize: '16px',
@@ -361,111 +369,109 @@ const carouselSlides = [
       dataPreviewStack: true,
     },
     previewCard: {
-      padding: '18px',
-      borderRadius: '22px',
+      padding: '24px',
+      borderRadius: '24px',
       border: '1px solid rgba(255,255,255,0.08)',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
-      boxShadow: '0 18px 36px rgba(0,0,0,0.24)',
+      background: 'rgba(255,255,255,0.03)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
       width: '100%',
+      transition: 'all 0.3s ease',
+      cursor: 'default',
     },
     carouselMedia: {
-      marginTop: '28px',
-      minHeight: '420px',
+      marginTop: '32px',
+      minHeight: '460px',
       width: '100%',
-      maxWidth: '640px',
+      maxWidth: '680px',
       borderRadius: '32px',
-      border: '1px solid rgba(255,255,255,0.12)',
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01))',
+      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(255,255,255,0.02)',
+      backdropFilter: 'blur(12px)',
       overflow: 'hidden',
-      boxShadow: '0 32px 90px rgba(0,0,0,0.45)',
+      boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
       position: 'relative',
       zIndex: 1,
+      animation: 'float 8s ease-in-out infinite',
     },
     slideWrapper: {
-      position: 'relative',
-      inset: 0,
       height: '100%',
-      transition: 'opacity 0.6s ease',
+      width: '100%',
+      position: 'relative',
     },
     mediaFrame: {
-      padding: '24px',
-      borderRadius: '32px',
-      background: 'linear-gradient(145deg, rgba(37,37,37,0.9), rgba(20,20,20,0.9))',
-      border: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
-      height: '380px',
+      padding: '24px 24px 60px',
+      height: '460px',
       width: '100%',
-      maxWidth: '600px',
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
       overflow: 'hidden',
-      margin: '0 auto',
     },
     mediaImage: {
-      width: '95%',
-      height: '90%',
+      width: '100%',
+      height: '100%',
       objectFit: 'contain',
-      objectPosition: 'center',
-      borderRadius: '24px',
-      border: '1px solid rgba(255,255,255,0.2)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      display: 'block',
-      margin: '0 auto',
+      borderRadius: '20px',
+      boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      background: 'var(--surface2)',
     },
     carouselOverlay: {
       position: 'absolute',
-      inset: '18px 18px auto auto',
-      padding: '8px 12px',
-      borderRadius: '999px',
-      background: 'rgba(10,9,8,0.62)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      color: 'var(--text)',
-      fontSize: '12px',
-      fontWeight: 700,
+      bottom: '70px',
+      left: '40px',
+      padding: '8px 16px',
+      borderRadius: '12px',
+      background: 'rgba(10,9,8,0.8)',
+      backdropFilter: 'blur(8px)',
+      border: '1px solid rgba(212,168,83,0.3)',
+      color: 'var(--gold)',
+      fontSize: '13px',
+      fontWeight: 600,
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      transition: 'all 0.3s ease',
+      gap: '10px',
+      zIndex: 10,
+      boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+      pointerEvents: 'none',
     },
     dotNav: {
       display: 'flex',
-      gap: '10px',
+      gap: '8px',
       position: 'absolute',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      bottom: '30px',
+      left: '40px',
+      zIndex: 10,
     },
     dot: {
-      width: '10px',
-      height: '10px',
-      borderRadius: '50%',
-      background: 'rgba(255,255,255,0.3)',
-      border: '1px solid rgba(255,255,255,0.2)',
+      width: '30px',
+      height: '4px',
+      borderRadius: '2px',
+      background: 'rgba(255,255,255,0.1)',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     dotActive: {
       background: 'var(--gold)',
-      boxShadow: '0 0 0 4px rgba(212,168,83,0.2)',
-      transform: 'scale(1.2)',
+      width: '60px',
+      boxShadow: '0 0 15px rgba(212,168,83,0.4)',
     },
     scrollBtn: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '8px',
-      padding: '12px 20px',
-      background: 'rgba(212,168,83,0.12)',
+      padding: '14px 28px',
+      background: 'rgba(212,168,83,0.1)',
       color: 'var(--gold)',
-      border: '1px solid rgba(212,168,83,0.3)',
+      border: '1px solid rgba(212,168,83,0.2)',
       borderRadius: '999px',
-      fontSize: '13px',
+      fontSize: '14px',
       fontWeight: 600,
       cursor: 'pointer',
-      marginTop: '20px',
-      transition: 'all 0.3s ease',
+      marginTop: '32px',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     previewMini: {
       display: 'grid',
@@ -522,11 +528,12 @@ const carouselSlides = [
       gap: '16px',
     },
     pictureCard: {
-      borderRadius: '22px',
+      borderRadius: '24px',
       border: '1px solid rgba(255,255,255,0.08)',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+      background: 'rgba(255,255,255,0.03)',
       overflow: 'hidden',
-      boxShadow: '0 18px 36px rgba(0,0,0,0.2)',
+      boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+      transition: 'all 0.3s ease',
     },
     pictureMeta: {
       padding: '14px 16px 16px',
@@ -647,8 +654,18 @@ const carouselSlides = [
             </div>
           </div>
           <div style={s.navActions}>
-            <button style={s.ghostBtn} onClick={() => openAuth('login')}>Log In</button>
-            <button style={s.goldBtn} onClick={() => openAuth('register')}>Get Started</button>
+            <button 
+              style={s.ghostBtn} 
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
+              onClick={() => openAuth('login')}
+            >Log In</button>
+            <button 
+              style={s.goldBtn} 
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 35px rgba(212,168,83,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(212,168,83,0.3)' }}
+              onClick={() => openAuth('register')}
+            >Get Started</button>
           </div>
         </div>
 
@@ -658,9 +675,11 @@ const carouselSlides = [
             <div style={s.heroGlow2} />
             <div style={s.heroTopGrid}>
               <div>
-            <div style={s.badge}>Career Counselling Platform</div>
-            <h1 style={s.sectionTitle}>Turn resumes, skills, and career goals into a sharper next move.</h1>
-            <p style={{ ...s.body, marginTop: '16px' }}>
+            <div style={{ ...s.badge, animation: 'float 6s ease-in-out infinite' }}>Career Counselling Platform</div>
+            <h1 style={s.sectionTitle}>
+              Turn resumes, skills, and <span className="text-gradient">career goals</span> into a sharper next move.
+            </h1>
+            <p style={{ ...s.body, marginTop: '16px', opacity: 0.9 }}>
               Pathfinder AI helps clients understand what they do, where they fit, and what to do next.
               It reads profile details, uses resume context, and turns vague career questions into focused,
               personalised advice.
@@ -675,14 +694,90 @@ const carouselSlides = [
               onMouseLeave={() => { setIsHover(false); setAutoPlay(true) }}
             >
               <div style={s.mediaFrame}>
-                <img
-                  src={carouselSlides[currentSlide].img}
-                  alt={carouselSlides[currentSlide].label}
-                  style={s.mediaImage}
-                />
+                {carouselSlides.map((slide, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      position: 'absolute',
+                      inset: '24px 24px 60px',
+                      opacity: idx === currentSlide ? 1 : 0,
+                      transform: idx === currentSlide 
+                        ? 'translateX(0) scale(1)' 
+                        : idx < currentSlide 
+                          ? 'translateX(-50px) scale(0.95)' 
+                          : 'translateX(50px) scale(0.95)',
+                      transition: 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
+                      pointerEvents: idx === currentSlide ? 'auto' : 'none',
+                      zIndex: idx === currentSlide ? 5 : 0,
+                    }}
+                  >
+                    <img
+                      src={slide.img}
+                      alt={slide.label}
+                      style={s.mediaImage}
+                    />
+                  </div>
+                ))}
               </div>
+
+              {/* Navigation Arrows */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); setCurrentSlide(prev => (prev - 1 + carouselSlides.length) % carouselSlides.length) }}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '20px',
+                  transform: 'translateY(-50%)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 20,
+                  backdropFilter: 'blur(4px)',
+                  transition: 'all 0.2s',
+                  opacity: isHover ? 1 : 0
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.4)'}
+              >
+                ←
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setCurrentSlide(prev => (prev + 1) % carouselSlides.length) }}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  right: '20px',
+                  transform: 'translateY(-50%)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 20,
+                  backdropFilter: 'blur(4px)',
+                  transition: 'all 0.2s',
+                  opacity: isHover ? 1 : 0
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.4)'}
+              >
+                →
+              </button>
+
               <div style={s.carouselOverlay}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '999px', background: 'var(--gold)', boxShadow: '0 0 0 4px rgba(212,168,83,0.14)' }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 10px var(--gold)' }} />
                 {carouselSlides[currentSlide].label}
               </div>
               <div style={s.dotNav}>
@@ -699,13 +794,22 @@ const carouselSlides = [
               </div>
             </div>
 
-            <button style={s.scrollBtn} onClick={scrollToPreview}>
+            <button 
+              style={s.scrollBtn} 
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.18)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.2)' }}
+              onClick={scrollToPreview}
+            >
               AI Workflow Preview ➤
             </button>
 
               </div>
               <div style={s.previewStack} data-preview-stack>
-                <div style={s.previewCard}>
+                <div 
+                  style={s.previewCard}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: '4px' }}>Personalised Insight</div>
@@ -722,7 +826,11 @@ const carouselSlides = [
                     ))}
                   </div>
                 </div>
-                <div style={s.previewCard}>
+                <div 
+                  style={s.previewCard}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                >
                   <div style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: '8px' }}>Inside The Session</div>
                   <div style={s.messageStack}>
                     <div style={{ ...s.messageBubble, background: 'rgba(212,168,83,0.14)', color: 'var(--text)', justifySelf: 'end' }}>
@@ -737,16 +845,24 @@ const carouselSlides = [
                   </div>
                 </div>
                 <div style={s.visualGrid}>
-                  <div style={s.pictureCard}>
-                    <img src={profileIllustration} alt="Profile intelligence preview" style={{ display: 'block', width: '100%', aspectRatio: '1.25', objectFit: 'cover' }} />
+                  <div 
+                    style={s.pictureCard}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                  >
+                    <img src={dashboardImg} alt="Profile intelligence preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid rgba(255,255,255,0.08)' }} />
                     <div style={s.pictureMeta}>
                       <div style={s.pictureLabel}>Profile View</div>
-                      <div style={s.pictureLabel}>Resume to profile</div>
+                      <div style={s.pictureTitle}>Resume to profile</div>
                       <div style={s.pictureText}>Structured strengths, extracted skills, and role context in one place.</div>
                     </div>
                   </div>
-                  <div style={s.pictureCard}>
-                    <img src={roadmapIllustration} alt="Career roadmap preview" style={{ display: 'block', width: '100%', aspectRatio: '1.25', objectFit: 'cover' }} />
+                  <div 
+                    style={s.pictureCard}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                  >
+                    <img src={roadmapImg} alt="Career roadmap preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid rgba(255,255,255,0.08)' }} />
                     <div style={s.pictureMeta}>
                       <div style={s.pictureLabel}>Roadmap View</div>
                       <div style={s.pictureTitle}>Guided next steps</div>

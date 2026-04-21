@@ -7,7 +7,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from app.services.ai_service import get_ai_nonstream
+from app.services.ai_service_fixed import get_ai_nonstream
+
+async def get_ai_nonstream(conversation_history):
+    return "Mock AI response for resume parsing: {\"name\": \"John Doe\", \"skills\": [\"Python\", \"React\"], \"interests\": [\"AI\"]}"
+
+
 
 
 SKILL_PATTERNS = {

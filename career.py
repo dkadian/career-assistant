@@ -1,15 +1,14 @@
 import json
 import re
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
-from app.models import Session, UserProfile
 from app.schemas import (
     ResumeReviewRequest, ResumeReviewResponse,
     InterviewPrepRequest, InterviewPrepResponse,
     CareerAdviceResponse,
 )
-from app.services.ai_service import get_career_advice_ai
+from app.services.ai_service_fixed import get_career_advice_ai
+from fastapi import Query
 
 router = APIRouter()
 
@@ -20,17 +19,16 @@ def _safe_parse_json(text: str) -> dict:
     return json.loads(cleaned)
 
 
-
-
 @router.post("/resume-review", response_model=ResumeReviewResponse)
-async def review_resume(payload: ResumeReviewRequest, db: DBSession = Depends(get_db)):
+async def review_resume(payload: ResumeReviewRequest, use_lm_studio: bool = Query(False), db = Depends(get_db)):
     """
     Submit resume text for AI-powered analysis.
     Returns strengths, improvement areas, actionable suggestions, and a score out of 10.
     """
-    session = db.query(Session).filter(Session.id == payload.session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    async with db.execute("SELECT * FROM sessions WHERE id = ?", (payload.session_id,)) as cur:
+        session_row = await cur.fetchone()
+        if not session_row:
+            raise HTTPException(status_code=404, detail="Session not found")
 
     prompt = f"""
 You are an expert resume reviewer and career counsellor.
@@ -59,17 +57,16 @@ Resume:
         )
 
 
-
-
 @router.post("/interview-prep", response_model=InterviewPrepResponse)
-async def interview_prep(payload: InterviewPrepRequest, db: DBSession = Depends(get_db)):
+async def interview_prep(payload: InterviewPrepRequest, db = Depends(get_db)):
     """
     Generate targeted interview questions and tips for a specific role and interview type.
     Interview types: behavioral | technical | hr
     """
-    session = db.query(Session).filter(Session.id == payload.session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    async with db.execute("SELECT * FROM sessions WHERE id = ?", (payload.session_id,)) as cur:
+        session_row = await cur.fetchone()
+        if not session_row:
+            raise HTTPException(status_code=404, detail="Session not found")
 
     prompt = f"""
 You are an expert interview coach.
@@ -94,33 +91,34 @@ Respond ONLY with a valid JSON object (no markdown, no extra text) in this exact
         raise HTTPException(status_code=500, detail=f"Unexpected AI response format: {raw[:300]}")
 
 
-
-
 @router.get("/career-paths/{session_id}", response_model=CareerAdviceResponse)
-async def get_career_paths(session_id: str, db: DBSession = Depends(get_db)):
+async def get_career_paths(session_id: str, db = Depends(get_db)):
     """
     Generate personalised career path recommendations based on the user's saved profile.
     Requires a profile to be created for the session first.
     """
-    session = db.query(Session).filter(Session.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    async with db.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)) as cur:
+        session_row = await cur.fetchone()
+        if not session_row:
+            raise HTTPException(status_code=404, detail="Session not found")
 
-    profile = db.query(UserProfile).filter(UserProfile.session_id == session_id).first()
-    if not profile:
-        raise HTTPException(
-            status_code=400,
-            detail="No profile found for this session. Create a profile first via POST /sessions/{session_id}/profile",
-        )
+    async with db.execute("SELECT * FROM user_profiles WHERE session_id = ?", (session_id,)) as cur:
+        profile_row = await cur.fetchone()
+        if not profile_row:
+            raise HTTPException(
+                status_code=400,
+                detail="No profile found for this session. Create a profile first via POST /sessions/{session_id}/profile",
+            )
+        profile = dict(profile_row)
 
     profile_summary = f"""
-Education: {profile.education_level or 'Not specified'}
-Field of study: {profile.field_of_study or 'Not specified'}
-Current role: {profile.current_role or 'Not specified'}
-Years of experience: {profile.years_of_experience if profile.years_of_experience is not None else 'Not specified'}
-Skills: {', '.join(profile.skills) if profile.skills else 'Not specified'}
-Interests: {', '.join(profile.interests) if profile.interests else 'Not specified'}
-Goals: {profile.goals or 'Not specified'}
+Education: {profile.get('education_level', 'Not specified')}
+Field of study: {profile.get('field_of_study', 'Not specified')}
+Current role: {profile.get('current_role', 'Not specified')}
+Years of experience: {profile.get('years_experience', 'Not specified')}
+Skills: {', '.join(p['skills'] or [])}
+Interests: {', '.join(p['interests'] or [])}
+Goals: {profile.get('career_goals', 'Not specified')}
 """
 
     prompt = f"""
@@ -150,10 +148,8 @@ Provide 3 career path options.
     try:
         data = _safe_parse_json(raw)
         return CareerAdviceResponse(**data)
-    except (json.JSONDecodeError, KeyError, TypeError):
+    except (json.JSONDecodeError, KeyError, TypeType):
         raise HTTPException(status_code=500, detail=f"Unexpected AI response format: {raw[:300]}")
-
-
 
 
 @router.get("/tips/{topic}")
@@ -177,3 +173,4 @@ Respond ONLY with valid JSON (no markdown):
         return _safe_parse_json(raw)
     except (json.JSONDecodeError, KeyError):
         raise HTTPException(status_code=500, detail=f"Unexpected AI response: {raw[:200]}")
+

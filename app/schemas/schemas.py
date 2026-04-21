@@ -30,6 +30,9 @@ class SessionCreate(BaseModel):
     user_id: str
     title: Optional[str] = "Career Counselling Session"
 
+class SessionUpdate(BaseModel):
+    title: str
+
 class SessionOut(BaseModel):
     id: str
     user_id: str
@@ -62,4 +65,31 @@ class ResumeUploadResponse(BaseModel):
     skills: List[str]
     interests: List[str]
     summary: str
+
+# Added for career.py
+class ResumeReviewRequest(BaseModel):
+    session_id: str
+    resume_text: str
+
+class ResumeReviewResponse(BaseModel):
+    strengths: List[str]
+    areas_for_improvement: List[str]
+    suggestions: List[str]
+    overall_score: int
+
+class InterviewPrepRequest(BaseModel):
+    session_id: str
+    target_role: str
+    interview_type: str
+
+class InterviewPrepResponse(BaseModel):
+    target_role: str
+    interview_type: str
+    questions: List[str]
+    tips: List[str]
+
+class CareerAdviceResponse(BaseModel):
+    career_paths: List[dict]
+    recommended_resources: List[str]
+    next_steps: List[str]
 

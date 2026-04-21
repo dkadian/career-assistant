@@ -5,7 +5,7 @@ from aiosqlite import Connection
 from typing import List
 
 from app.database import get_db
-from app.schemas.schemas import SessionCreate, SessionOut, SessionWithMessages, MessageOut
+from app.schemas.schemas import SessionCreate, SessionUpdate, SessionOut, SessionWithMessages, MessageOut
 
 router = APIRouter()
 
@@ -28,6 +28,22 @@ async def list_sessions(user_id: str, db: Connection = Depends(get_db)):
     async with db.execute("SELECT * FROM sessions WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)) as cur:
         rows = await cur.fetchall()
     return [SessionOut(**dict(r)) for r in rows]
+
+@router.put("/{session_id}", response_model=SessionOut)
+async def update_session(session_id: str, payload: SessionUpdate, db: Connection = Depends(get_db)):
+    async with db.execute("SELECT id FROM sessions WHERE id = ?", (session_id,)) as cur:
+        session = await cur.fetchone()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    await db.execute("UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?",
+        (payload.title, now, session_id))
+    await db.commit()
+    
+    async with db.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)) as cur:
+        row = await cur.fetchone()
+    return SessionOut(**dict(row))
 
 @router.get("/{session_id}", response_model=SessionWithMessages)
 async def get_session(session_id: str, db: Connection = Depends(get_db)):
