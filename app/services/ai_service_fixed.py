@@ -9,7 +9,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 from accelerate import Accelerator
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "google/gemma-2-9b-it:free"
+OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct"
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
 LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "careerboost-exaone")

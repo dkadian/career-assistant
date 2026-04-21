@@ -9,7 +9,8 @@ async function req(path, options = {}) {
   return data
 }
 export const api = {
-  createUser: (name, email) => req('/profile/users', { method: 'POST', body: JSON.stringify({ name, email }) }),
+  createUser: (name, email, password) => req('/profile/users', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
+  loginUser: (email, password) => req('/profile/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   saveProfile: (userId, profile) => req(`/profile/users/${userId}/profile`, { method: 'PUT', body: JSON.stringify(profile) }),
   getProfile: (userId) => req(`/profile/users/${userId}/profile`),
   getUserByEmail: (email) => req(`/profile/users/by-email/${email}`),

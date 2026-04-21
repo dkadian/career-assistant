@@ -20,7 +20,7 @@ function makeIllustration(color1, color2, color3) {
           <stop offset="100%" stop-color="${color1}20"/>
         </radialGradient>
       </defs>
-      <rect width="300" height="240" fill="#1a1a1a" rx="24"/>
+      <rect width="300" height="240" fill="var(--bg)" rx="24"/>
       <circle cx="90" cy="60" r="80" fill="url(#g1)" opacity="0.9"/>
       <circle cx="210" cy="160" r="60" fill="url(#g2)" opacity="0.8"/>
       <path d="M50 180 Q150 220 250 180" stroke="${color1}" stroke-width="3" fill="none" opacity="0.7"/>
@@ -32,13 +32,13 @@ function makeIllustration(color1, color2, color3) {
 function makeSceneIllustration() {
   return `data:image/svg+xml;base64,${btoa(`
     <svg viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg">
-      <rect width="300" height="240" fill="#1a1a1a" rx="24"/>
-      <circle cx="80" cy="80" r="40" fill="#D4A85340"/>
-      <circle cx="220" cy="70" r="30" fill="#7A9A6A40"/>
-      <rect x="50" y="140" width="80" height="60" rx="8" fill="#C4633A30"/>
-      <rect x="170" y="130" width="70" height="70" rx="10" fill="#D4A85330"/>
-      <path d="M30 200 L150 190 L270 205" stroke="#D4A853CC" stroke-width="2" fill="none"/>
-      <text x="150" y="225" text-anchor="middle" fill="#D4A853DD" font-size="18" font-family="sans-serif">Scene</text>
+      <rect width="300" height="240" fill="var(--bg)" rx="24"/>
+      <circle cx="80" cy="80" r="40" fill="#22C55E40"/>
+      <circle cx="220" cy="70" r="30" fill="#22C55E40"/>
+      <rect x="50" y="140" width="80" height="60" rx="8" fill="#f43f5e30"/>
+      <rect x="170" y="130" width="70" height="70" rx="10" fill="#6366f130"/>
+      <path d="M30 200 L150 190 L270 205" stroke="#6366f1CC" stroke-width="2" fill="none"/>
+      <text x="150" y="225" text-anchor="middle" fill="#6366f1DD" font-size="18" font-family="sans-serif">Scene</text>
     </svg>
   `).replace(/=/g, '%3D')}`;
 }
@@ -46,14 +46,14 @@ function makeSceneIllustration() {
 function makeChatIllustration() {
   return `data:image/svg+xml;base64,${btoa(`
     <svg viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg">
-      <rect width="300" height="240" fill="#1a1a1a" rx="24"/>
-      <rect x="40" y="40" width="220" height="160" rx="16" fill="#252525" stroke="#D4A85340" stroke-width="2"/>
-      <circle cx="80" cy="80" r="8" fill="#7A9A6A"/>
-      <circle cx="100" cy="85" r="6" fill="#C4633A"/>
-      <path d="M80 110 Q110 130 140 110" stroke="#D4A853" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <rect x="200" y="100" width="60" height="30" rx="12" fill="#D4A85320"/>
-      <rect x="160" y="160" width="80" height="25" rx="10" fill="#7A9A6A20"/>
-      <text x="150" y="225" text-anchor="middle" fill="#D4A853DD" font-size="20" font-family="sans-serif" font-weight="bold">Chat</text>
+      <rect width="300" height="240" fill="var(--bg)" rx="24"/>
+      <rect x="40" y="40" width="220" height="160" rx="16" fill="var(--surface)" stroke="#6366f140" stroke-width="2"/>
+      <circle cx="80" cy="80" r="8" fill="#22C55E"/>
+      <circle cx="100" cy="85" r="6" fill="#f43f5e"/>
+      <path d="M80 110 Q110 130 140 110" stroke="#6366f1" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <rect x="200" y="100" width="60" height="30" rx="12" fill="#6366f120"/>
+      <rect x="160" y="160" width="80" height="25" rx="10" fill="#22C55E20"/>
+      <text x="150" y="225" text-anchor="middle" fill="#6366f1DD" font-size="20" font-family="sans-serif" font-weight="bold">Chat</text>
     </svg>
   `).replace(/=/g, '%3D')}`;
 }
@@ -81,8 +81,8 @@ const journeySteps = [
 ]
 
 const insightChips = ['Resume-aware AI', 'Skill extraction', 'Role-fit guidance', 'Interview prep', 'Growth roadmap']
-const profileIllustration = makeIllustration('#D4A853', '#7A9A6A', '#C4633A')
-const roadmapIllustration = makeIllustration('#C4633A', '#D4A853', '#7A9A6A')
+const profileIllustration = makeIllustration('#6366f1', '#22C55E', '#f43f5e')
+const roadmapIllustration = makeIllustration('#f43f5e', '#6366f1', '#22C55E')
 const heroSceneIllustration = makeSceneIllustration()
 const chatIllustration = makeChatIllustration()
 
@@ -91,6 +91,7 @@ export default function AuthPage({ onAuth }) {
   const [mode, setMode] = useState('register')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -126,11 +127,12 @@ const carouselSlides = [
     try {
       let user
       if (mode === 'login') {
-        if (!email.trim()) return setError('Please enter your email.')
-        user = await api.getUserByEmail(email.trim())
+        if (!email.trim() || !password.trim()) return setError('Please enter your email and password.')
+        user = await api.loginUser(email.trim(), password.trim())
       } else {
-        if (!name.trim() || !email.trim()) return setError('Please fill in all fields.')
-        user = await api.createUser(name.trim(), email.trim())
+        if (!name.trim() || !email.trim() || !password.trim()) return setError('Please fill in all fields.')
+        if (password.length < 6) return setError('Password must be at least 6 characters.')
+        user = await api.createUser(name.trim(), email.trim(), password.trim())
       }
       localStorage.setItem('userId', user.id)
       localStorage.setItem('userName', user.name)
@@ -139,9 +141,11 @@ const carouselSlides = [
       setError(
         e.message.includes('already')
           ? 'Email already registered. Try login.'
-          : e.message.includes('not found')
-            ? 'User not found. Try register.'
-            : 'Cannot connect to server.'
+          : e.message.includes('Invalid email or password')
+            ? 'Invalid email or password.'
+            : e.message.includes('not found')
+              ? 'User not found. Try register.'
+              : 'Cannot connect to server.'
       )
     } finally {
       setLoading(false)
@@ -159,9 +163,19 @@ const carouselSlides = [
   const s = {
     page: {
       minHeight: '100vh',
-      background:
-        'radial-gradient(circle at 10% 0%, rgba(212,168,83,0.22), transparent 24%), radial-gradient(circle at 88% 10%, rgba(196,99,58,0.14), transparent 20%), radial-gradient(circle at 50% 100%, rgba(122,154,106,0.08), transparent 28%), linear-gradient(180deg, #141312 0%, #1a1a1a 32%, #171615 100%)',
+      background: 'var(--bg)',
       overflowY: 'auto',
+      color: 'var(--text)',
+    },
+    backgroundOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'radial-gradient(circle at 10% 0%, var(--gold-glow), transparent 24%), radial-gradient(circle at 88% 10%, rgba(244,63,94,0.05), transparent 20%), radial-gradient(circle at 50% 100%, rgba(34,197,94,0.04), transparent 28%)',
+      pointerEvents: 'none',
+      zIndex: 0,
     },
     shell: {
       width: '100%',
@@ -171,6 +185,7 @@ const carouselSlides = [
       flexDirection: 'column',
       gap: '28px',
       position: 'relative',
+      zIndex: 1,
     },
     nav: {
       display: 'flex',
@@ -189,8 +204,8 @@ const carouselSlides = [
       width: '42px',
       height: '42px',
       borderRadius: '14px',
-      background: 'linear-gradient(135deg, rgba(212,168,83,0.22), rgba(196,99,58,0.14))',
-      border: '1px solid rgba(212,168,83,0.28)',
+      background: 'var(--surface2)',
+      border: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -201,9 +216,9 @@ const carouselSlides = [
     navActions: { display: 'flex', gap: '10px', flexWrap: 'wrap' },
     ghostBtn: {
       padding: '12px 24px',
-      background: 'rgba(255,255,255,0.03)',
+      background: 'var(--surface2)',
       color: 'var(--text)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      border: '1px solid var(--border)',
       borderRadius: '999px',
       fontSize: '14px',
       fontWeight: 600,
@@ -213,12 +228,12 @@ const carouselSlides = [
     goldBtn: {
       padding: '12px 24px',
       background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
-      color: 'var(--bg)',
+      color: 'white',
       border: 'none',
       borderRadius: '999px',
       fontSize: '14px',
       fontWeight: 700,
-      boxShadow: '0 12px 30px rgba(212,168,83,0.3)',
+      boxShadow: '0 12px 30px rgba(99,102,241,0.3)',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     heroGrid: {
@@ -229,15 +244,15 @@ const carouselSlides = [
       flex: 1,
     },
     heroPanel: {
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'linear-gradient(180deg, rgba(37,37,37,0.7), rgba(24,24,24,0.85))',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
       backdropFilter: 'blur(20px)',
       borderRadius: '40px',
       padding: '48px',
       boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
       position: 'relative',
       overflow: 'hidden',
-      backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0)',
+      backgroundImage: 'radial-gradient(circle at 2px 2px, var(--border) 1px, transparent 0)',
       backgroundSize: '40px 40px',
     },
     heroGlow: {
@@ -246,7 +261,7 @@ const carouselSlides = [
       width: '280px',
       height: '280px',
       borderRadius: '999px',
-      background: 'radial-gradient(circle, rgba(212,168,83,0.22), transparent 68%)',
+      background: 'radial-gradient(circle, var(--gold-glow), transparent 68%)',
       pointerEvents: 'none',
     },
     heroGlow2: {
@@ -255,7 +270,7 @@ const carouselSlides = [
       width: '240px',
       height: '240px',
       borderRadius: '999px',
-      background: 'radial-gradient(circle, rgba(196,99,58,0.12), transparent 70%)',
+      background: 'radial-gradient(circle, rgba(244,63,94,0.12), transparent 70%)',
       pointerEvents: 'none',
     },
     heroTopGrid: {
@@ -267,8 +282,8 @@ const carouselSlides = [
       zIndex: 1,
     },
     authPanel: {
-      border: '1px solid rgba(212,168,83,0.18)',
-      background: 'linear-gradient(180deg, rgba(37,37,37,0.98), rgba(28,28,28,0.98))',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
       borderRadius: '28px',
       padding: '28px',
       boxShadow: '0 28px 70px rgba(0,0,0,0.4)',
@@ -279,7 +294,7 @@ const carouselSlides = [
     panelOverlay: {
       position: 'fixed',
       inset: 0,
-      background: 'rgba(10,9,8,0.72)',
+      background: 'rgba(var(--bg-rgb), 0.72)',
       backdropFilter: 'blur(10px)',
       display: 'flex',
       alignItems: 'center',
@@ -294,8 +309,8 @@ const carouselSlides = [
       gap: '8px',
       padding: '8px 12px',
       borderRadius: '999px',
-      border: '1px solid rgba(212,168,83,0.2)',
-      background: 'rgba(212,168,83,0.08)',
+      border: '1px solid var(--gold-glow)',
+      background: 'var(--gold-glow)',
       color: 'var(--gold)',
       fontSize: '11px',
       letterSpacing: '1.4px',
@@ -313,7 +328,7 @@ const carouselSlides = [
       padding: '16px',
       borderRadius: '18px',
       border: '1px solid var(--border)',
-      background: 'rgba(255,255,255,0.02)',
+      background: 'var(--surface)',
     },
     sectionTitle: {
       fontFamily: "'Cormorant Garamond',serif",
@@ -341,8 +356,8 @@ const carouselSlides = [
     chip: {
       padding: '8px 12px',
       borderRadius: '999px',
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--surface2)',
+      border: '1px solid var(--border)',
       fontSize: '12px',
       color: 'var(--text2)',
     },
@@ -355,8 +370,8 @@ const carouselSlides = [
     featureCard: {
       padding: '18px',
       borderRadius: '18px',
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       backdropFilter: 'blur(4px)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
     },
@@ -371,8 +386,8 @@ const carouselSlides = [
     previewCard: {
       padding: '24px',
       borderRadius: '24px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
       backdropFilter: 'blur(10px)',
       boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
       width: '100%',
@@ -385,8 +400,8 @@ const carouselSlides = [
       width: '100%',
       maxWidth: '680px',
       borderRadius: '32px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
       backdropFilter: 'blur(12px)',
       overflow: 'hidden',
       boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
@@ -415,7 +430,7 @@ const carouselSlides = [
       objectFit: 'contain',
       borderRadius: '20px',
       boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      border: '1px solid var(--border)',
       background: 'var(--surface2)',
     },
     carouselOverlay: {
@@ -424,9 +439,9 @@ const carouselSlides = [
       left: '40px',
       padding: '8px 16px',
       borderRadius: '12px',
-      background: 'rgba(10,9,8,0.8)',
+      background: 'rgba(var(--bg-rgb), 0.8)',
       backdropFilter: 'blur(8px)',
-      border: '1px solid rgba(212,168,83,0.3)',
+      border: '1px solid var(--gold-glow)',
       color: 'var(--gold)',
       fontSize: '13px',
       fontWeight: 600,
@@ -449,23 +464,23 @@ const carouselSlides = [
       width: '30px',
       height: '4px',
       borderRadius: '2px',
-      background: 'rgba(255,255,255,0.1)',
+      background: 'var(--border2)',
       cursor: 'pointer',
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     },
     dotActive: {
       background: 'var(--gold)',
       width: '60px',
-      boxShadow: '0 0 15px rgba(212,168,83,0.4)',
+      boxShadow: '0 0 15px rgba(99,102,241,0.4)',
     },
     scrollBtn: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '8px',
       padding: '14px 28px',
-      background: 'rgba(212,168,83,0.1)',
+      background: 'var(--gold-glow)',
       color: 'var(--gold)',
-      border: '1px solid rgba(212,168,83,0.2)',
+      border: '1px solid var(--gold-glow)',
       borderRadius: '999px',
       fontSize: '14px',
       fontWeight: 600,
@@ -481,7 +496,7 @@ const carouselSlides = [
     previewLine: {
       height: '10px',
       borderRadius: '999px',
-      background: 'linear-gradient(90deg, rgba(240,234,216,0.22), rgba(240,234,216,0.06))',
+      background: 'var(--surface2)',
     },
     previewBadgeRow: {
       display: 'flex',
@@ -492,8 +507,8 @@ const carouselSlides = [
     previewBadge: {
       padding: '7px 10px',
       borderRadius: '999px',
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: 'var(--surface2)',
+      border: '1px solid var(--border)',
       color: 'var(--text2)',
       fontSize: '11px',
       fontWeight: 600,
@@ -519,8 +534,8 @@ const carouselSlides = [
     previewKpiCard: {
       padding: '12px',
       borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
     },
     visualGrid: {
       display: 'grid',
@@ -529,8 +544,8 @@ const carouselSlides = [
     },
     pictureCard: {
       borderRadius: '24px',
-      border: '1px solid rgba(255,255,255,0.08)',
-      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid var(--border)',
+      background: 'var(--surface)',
       overflow: 'hidden',
       boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
       transition: 'all 0.3s ease',
@@ -568,8 +583,8 @@ const carouselSlides = [
       alignItems: 'center',
       padding: '12px 14px',
       borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.06)',
-      background: 'rgba(0,0,0,0.12)',
+      border: '1px solid var(--border)',
+      background: 'var(--surface2)',
       color: 'var(--text)',
       fontSize: '14px',
     },
@@ -577,7 +592,7 @@ const carouselSlides = [
       width: '28px',
       height: '28px',
       borderRadius: '999px',
-      background: 'rgba(212,168,83,0.14)',
+      background: 'var(--gold-glow)',
       color: 'var(--gold)',
       display: 'flex',
       alignItems: 'center',
@@ -592,7 +607,7 @@ const carouselSlides = [
       gap: '8px',
       padding: '6px',
       borderRadius: '16px',
-      background: 'rgba(255,255,255,0.03)',
+      background: 'var(--surface2)',
       border: '1px solid var(--border)',
       marginBottom: '22px',
     },
@@ -606,7 +621,7 @@ const carouselSlides = [
       color: 'var(--text2)',
     },
     activeTab: {
-      background: 'rgba(212,168,83,0.14)',
+      background: 'rgba(99,102,241,0.14)',
       color: 'var(--gold)',
     },
     label: {
@@ -638,12 +653,13 @@ const carouselSlides = [
       borderRadius: '14px',
       fontSize: '14px',
       fontWeight: 700,
-      boxShadow: '0 16px 32px rgba(212,168,83,0.16)',
+      boxShadow: '0 16px 32px rgba(99,102,241,0.16)',
     },
   }
 
   return (
     <div style={s.page}>
+      <div style={s.backgroundOverlay}></div>
       <div style={s.shell}>
         <div style={s.nav}>
           <div style={s.brand}>
@@ -656,14 +672,14 @@ const carouselSlides = [
           <div style={s.navActions}>
             <button 
               style={s.ghostBtn} 
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.transform = 'translateY(0)' }}
               onClick={() => openAuth('login')}
             >Log In</button>
             <button 
               style={s.goldBtn} 
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 35px rgba(212,168,83,0.4)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(212,168,83,0.3)' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 35px rgba(99,102,241,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(99,102,241,0.3)' }}
               onClick={() => openAuth('register')}
             >Get Started</button>
           </div>
@@ -796,8 +812,8 @@ const carouselSlides = [
 
             <button 
               style={s.scrollBtn} 
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.18)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.4)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,168,83,0.1)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.2)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--gold-glow)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--gold-glow)' }}
               onClick={scrollToPreview}
             >
               AI Workflow Preview ➤
@@ -807,15 +823,15 @@ const carouselSlides = [
               <div style={s.previewStack} data-preview-stack>
                 <div 
                   style={s.previewCard}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: '4px' }}>Personalised Insight</div>
                       <div style={{ fontSize: '18px', color: 'var(--text)', fontWeight: 700 }}>Career Snapshot</div>
                     </div>
-                    <div style={{ padding: '8px 10px', borderRadius: '999px', background: 'rgba(122,154,106,0.14)', color: 'var(--sage)', fontSize: '11px', fontWeight: 700 }}>AI Ready</div>
+                    <div style={{ padding: '8px 10px', borderRadius: '999px', background: 'var(--sage)', color: 'white', fontSize: '11px', fontWeight: 700, opacity: 0.8 }}>AI Ready</div>
                   </div>
                   <div style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.75 }}>
                     "Based on your skills and resume context, you are a strong fit for ML, analytics, and applied AI roles."
@@ -828,18 +844,18 @@ const carouselSlides = [
                 </div>
                 <div 
                   style={s.previewCard}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
                   <div style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: '8px' }}>Inside The Session</div>
                   <div style={s.messageStack}>
-                    <div style={{ ...s.messageBubble, background: 'rgba(212,168,83,0.14)', color: 'var(--text)', justifySelf: 'end' }}>
+                    <div style={{ ...s.messageBubble, background: 'var(--gold-glow)', color: 'var(--text)', justifySelf: 'end', border: '1px solid var(--gold-glow)' }}>
                       Which roles fit my resume best?
                     </div>
-                    <div style={{ ...s.messageBubble, background: 'rgba(255,255,255,0.04)', color: 'var(--text2)' }}>
+                    <div style={{ ...s.messageBubble, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                       Your strongest fits are AI/ML Engineer, Data Analyst, and Applied Python Developer based on your projects and technical stack.
                     </div>
-                    <div style={{ ...s.messageBubble, background: 'rgba(255,255,255,0.04)', color: 'var(--text2)' }}>
+                    <div style={{ ...s.messageBubble, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                       I can also build a 30-day roadmap for skills, projects, and interview prep.
                     </div>
                   </div>
@@ -847,10 +863,10 @@ const carouselSlides = [
                 <div style={s.visualGrid}>
                   <div 
                     style={s.pictureCard}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                   >
-                    <img src={dashboardImg} alt="Profile intelligence preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid rgba(255,255,255,0.08)' }} />
+                    <img src={dashboardImg} alt="Profile intelligence preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid var(--border)' }} />
                     <div style={s.pictureMeta}>
                       <div style={s.pictureLabel}>Profile View</div>
                       <div style={s.pictureTitle}>Resume to profile</div>
@@ -859,10 +875,10 @@ const carouselSlides = [
                   </div>
                   <div 
                     style={s.pictureCard}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)' }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.2)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                   >
-                    <img src={roadmapImg} alt="Career roadmap preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid rgba(255,255,255,0.08)' }} />
+                    <img src={roadmapImg} alt="Career roadmap preview" style={{ display: 'block', width: '100%', aspectRatio: '1.4', objectFit: 'cover', borderBottom: '1px solid var(--border)' }} />
                     <div style={s.pictureMeta}>
                       <div style={s.pictureLabel}>Roadmap View</div>
                       <div style={s.pictureTitle}>Guided next steps</div>
@@ -938,7 +954,7 @@ const carouselSlides = [
           <div style={{ ...s.authPanel, width: '100%', maxWidth: '460px', position: 'relative', top: 'auto', alignSelf: 'auto' }}>
             <button
               onClick={() => setShowAuth(false)}
-              style={{ position: 'absolute', top: '14px', right: '14px', width: '34px', height: '34px', borderRadius: '999px', border: '1px solid var(--border2)', background: 'rgba(255,255,255,0.03)', color: 'var(--text2)', fontSize: '16px' }}
+              style={{ position: 'absolute', top: '14px', right: '14px', width: '34px', height: '34px', borderRadius: '999px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', fontSize: '16px' }}
             >
               ×
             </button>
@@ -958,7 +974,7 @@ const carouselSlides = [
             </div>
 
             {error && (
-              <div style={{ background: 'rgba(196,99,58,0.1)', border: '1px solid rgba(196,99,58,0.3)', color: 'var(--rust)', padding: '10px 14px', borderRadius: '14px', fontSize: '13px', marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: 'var(--rust)', padding: '10px 14px', borderRadius: '14px', fontSize: '13px', marginBottom: '16px' }}>
                 {error}
               </div>
             )}
@@ -986,16 +1002,26 @@ const carouselSlides = [
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             />
 
+            <label style={s.label}>Password</label>
+            <input
+              style={s.input}
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            />
+
             <button style={{ ...s.formBtn, opacity: loading ? 0.7 : 1 }} onClick={handleSubmit} disabled={loading}>
               {btnText}
             </button>
 
-            <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ marginTop: '18px', paddingTop: '18px', borderTop: '1px solid var(--border)' }}>
               <div style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '8px' }}>Inside the platform you can:</div>
               <div style={{ display: 'grid', gap: '8px' }}>
                 {['Save profile details', 'Upload resume for skill extraction', 'Ask personalised career questions'].map(item => (
                   <div key={item} style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: 'var(--text2)' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: 'var(--gold)', boxShadow: '0 0 0 4px rgba(212,168,83,0.08)' }} />
+                    <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: 'var(--gold)', boxShadow: '0 0 0 4px var(--gold-glow)' }} />
                     <span>{item}</span>
                   </div>
                 ))}
