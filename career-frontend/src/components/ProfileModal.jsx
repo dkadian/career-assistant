@@ -80,18 +80,18 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
     finally { setLoading(false) }
   }
 
-  const inp = { width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', fontSize: '14px', color: 'var(--text)', outline: 'none', transition: 'all 0.2s' }
+  const inp = { width: '100%', padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', fontSize: '14px', color: 'var(--text)', outline: 'none', transition: 'all 0.2s' }
   const lbl = { display: 'block', fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '8px', marginTop: '4px' }
-  const tagBox = { display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', minHeight: '100px', alignContent: 'flex-start' }
-  const tag = { background: 'rgba(212,168,83,0.12)', border: '1px solid rgba(212,168,83,0.2)', color: 'var(--gold)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }
+  const tagBox = { display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', minHeight: '100px', alignContent: 'flex-start' }
+  const tag = { background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--gold)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,9,8,0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="glass-morphism" style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: '32px', padding: '40px', width: '580px', maxWidth: '100%', boxShadow: '0 40px 100px rgba(0,0,0,0.6)', animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(var(--bg-rgb), 0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-morphism" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '32px', padding: '40px', width: '580px', maxWidth: '100%', boxShadow: '0 40px 100px rgba(0,0,0,0.4)', animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
         
         {/* Progress bar */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'rgba(255,255,255,0.05)' }}>
-          <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--gold)', transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 15px var(--gold)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'var(--surface2)' }}>
+          <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--gold)', transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 15px var(--gold-glow)' }} />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
@@ -101,22 +101,22 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
               {step === 1 ? 'Basic Details' : step === 2 ? 'Skills & Expertise' : 'Goals & Future'}
             </h2>
           </div>
-          <button style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text3)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onClick={onClose} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>×</button>
+          <button style={{ background: 'var(--surface2)', border: 'none', color: 'var(--text3)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onClick={onClose} onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}>×</button>
         </div>
 
-        {error && <div style={{ background: 'rgba(196,99,58,0.1)', border: '1px solid rgba(196,99,58,0.2)', color: 'var(--rust)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{error}</div>}
-        {status && <div style={{ background: 'rgba(122,154,106,0.1)', border: '1px solid rgba(122,154,106,0.2)', color: 'var(--sage)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{status}</div>}
+        {error && <div style={{ background: 'var(--surface)', border: '1px solid var(--rust)', color: 'var(--rust)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{error}</div>}
+        {status && <div style={{ background: 'var(--surface)', border: '1px solid var(--sage)', color: 'var(--sage)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{status}</div>}
 
         <div style={{ minHeight: '340px' }}>
           {step === 1 && (
             <div style={{ animation: 'slideInRight 0.4s ease' }}>
               <div style={{ marginBottom: '24px' }}>
                 <label style={lbl}>Automatic Profile Setup</label>
-                <div style={{ background: 'rgba(212,168,83,0.05)', border: '1px dashed rgba(212,168,83,0.3)', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
+                <div style={{ background: 'var(--surface)', border: '1px dashed var(--border2)', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px' }}>Upload your resume to instantly fill your profile with extracted skills and experience.</div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <input type="file" id="resume-up" accept=".pdf,.docx" style={{ display: 'none' }} onChange={e => setResumeFile(e.target.files[0])} />
-                    <label htmlFor="resume-up" style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <label htmlFor="resume-up" style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {resumeFile ? resumeFile.name : 'Select PDF or DOCX...'}
                     </label>
                     <button 
@@ -139,8 +139,8 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
                       placeholder={p} 
                       value={form[k]} 
                       onChange={e => setForm({...form,[k]:e.target.value})} 
-                      onFocus={e => { e.target.style.borderColor = 'var(--gold)'; e.target.style.background = 'rgba(255,255,255,0.05)' }}
-                      onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)' }}
+                      onFocus={e => { e.target.style.borderColor = 'var(--gold)'; e.target.style.background = 'var(--surface2)' }}
+                      onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--surface)' }}
                     />
                   </div>
                 ))}
@@ -171,7 +171,7 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
               <label style={lbl}>Areas of Interest</label>
               <div style={tagBox}>
                 {interests.map(i => (
-                  <span key={i} style={{ ...tag, background: 'rgba(196,99,58,0.12)', border: '1px solid rgba(196,99,58,0.2)', color: 'var(--rust)' }}>
+                  <span key={i} style={{ ...tag, background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--rust)' }}>
                     {i}
                     <span style={{ cursor: 'pointer', opacity: 0.6, fontSize: '16px' }} onClick={() => setInterests(interests.filter(v => v !== i))}>×</span>
                   </span>
@@ -196,31 +196,31 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
                 placeholder="I want to transition into AI Engineering and work on large scale language models..." 
                 value={form.career_goals} 
                 onChange={e => setForm({...form, career_goals: e.target.value})} 
-                onFocus={e => { e.target.style.borderColor = 'var(--gold)'; e.target.style.background = 'rgba(255,255,255,0.05)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)' }}
+                onFocus={e => { e.target.style.borderColor = 'var(--gold)'; e.target.style.background = 'var(--surface2)' }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--surface)' }}
               />
             </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', gap: '16px', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
           {step > 1 ? (
             <button 
-              style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'var(--text2)', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s' }} 
+              style={{ padding: '12px 24px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', color: 'var(--text2)', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s' }} 
               onClick={() => setStep(step - 1)}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--surface)'}
             >
               Back
             </button>
           ) : (
-            <button style={{ padding: '12px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'var(--text3)', fontSize: '14px' }} onClick={onClose}>Cancel</button>
+            <button style={{ padding: '12px 24px', background: 'transparent', border: '1px solid var(--border)', borderRadius: '14px', color: 'var(--text3)', fontSize: '14px' }} onClick={onClose}>Cancel</button>
           )}
 
           {step < 3 ? (
             <button 
               className="premium-gradient"
-              style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '14px', color: 'var(--bg)', fontSize: '15px', fontWeight: 700, boxShadow: '0 10px 20px rgba(212,168,83,0.2)', transition: 'all 0.3s' }} 
+              style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '14px', color: 'var(--bg)', fontSize: '15px', fontWeight: 700, boxShadow: '0 10px 20px var(--gold-glow)', transition: 'all 0.3s' }} 
               onClick={() => setStep(step + 1)}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
@@ -230,7 +230,7 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
           ) : (
             <button 
               className="premium-gradient"
-              style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '14px', color: 'var(--bg)', fontSize: '15px', fontWeight: 700, boxShadow: '0 10px 20px rgba(212,168,83,0.2)', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }} 
+              style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '14px', color: 'var(--bg)', fontSize: '15px', fontWeight: 700, boxShadow: '0 10px 20px var(--gold-glow)', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }} 
               onClick={handleSave} 
               disabled={loading}
               onMouseEnter={e => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}

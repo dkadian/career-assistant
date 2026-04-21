@@ -209,7 +209,8 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
   }, [isTyping, selectedModel])
 
   return (
-    <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: 'radial-gradient(circle at top right, rgba(212,168,83,0.03), transparent 40%), radial-gradient(circle at bottom left, rgba(196,99,58,0.03), transparent 40%)' }}>
+    <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: 'var(--bg)' }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, background: 'radial-gradient(circle at top right, var(--gold-glow), transparent 40%), radial-gradient(circle at bottom left, rgba(244,63,94,0.03), transparent 40%)', pointerEvents: 'none', opacity: 0.5 }}></div>
       <div className="glass-morphism" style={{ padding:'20px 32px', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, zIndex: 5 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* AI Bot Status Logo */}
@@ -217,14 +218,14 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
             width: '44px', 
             height: '44px', 
             borderRadius: '12px', 
-            background: isModelActive ? 'rgba(212,168,83,0.1)' : 'rgba(255,255,255,0.02)',
-            border: `1px solid ${isModelActive ? 'rgba(212,168,83,0.3)' : 'rgba(255,255,255,0.05)'}`,
+            background: isModelActive ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${isModelActive ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: isModelActive ? '0 0 20px rgba(212,168,83,0.15)' : 'none',
+            boxShadow: isModelActive ? '0 0 20px rgba(99,102,241,0.15)' : 'none',
             animation: isModelActive ? 'float 4s ease-in-out infinite' : 'none'
           }}>
             <div style={{
@@ -303,7 +304,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
       <div style={{ flex:1, overflowY:'auto', padding:'32px', display:'flex', flexDirection:'column', gap:'24px' }}>
         {!session || messages.length === 0 ? (
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'40px 20px', animation:'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
-            <div className="premium-gradient" style={{ width:'80px', height:'80px', borderRadius:'24px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'24px', boxShadow: '0 20px 40px rgba(212,168,83,0.15)', animation: 'float 6s ease-in-out infinite' }}>
+            <div className="premium-gradient" style={{ width:'80px', height:'80px', borderRadius:'24px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'24px', boxShadow: '0 20px 40px rgba(99,102,241,0.15)', animation: 'float 6s ease-in-out infinite' }}>
               <span style={{ fontSize: '32px' }}>✦</span>
             </div>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:700, color:'var(--text)', lineHeight:1.1, marginBottom:'16px' }}>Ready to shape your future?</h2>
@@ -315,7 +316,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
                   className="glass-morphism"
                   style={{ padding:'16px', borderRadius:'18px', color:'var(--text)', fontSize:'13px', textAlign:'left', display:'flex', alignItems:'center', gap:'12px', lineHeight:1.4, transition: 'all 0.3s', border: '1px solid rgba(255,255,255,0.05)' }} 
                   onClick={() => send(sg.msg)}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(212,168,83,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
                 >
                   <span style={{ fontSize:'20px', flexShrink:0 }}>{sg.icon}</span>
@@ -329,7 +330,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
             {messages.map((msg, i) => (
               <div key={msg.id||i} style={{ display:'flex', gap:'16px', alignItems:'flex-start', justifyContent: msg.role==='user' ? 'flex-end' : 'flex-start', animation:'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
                 {msg.role==='assistant' && (
-                  <div className="premium-gradient" style={{ width:'36px', height:'36px', borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontWeight: 800, fontSize:'16px', color:'var(--bg)', boxShadow: '0 4px 12px rgba(212,168,83,0.2)', marginTop: '4px' }}>P</div>
+                  <div className="premium-gradient" style={{ width:'36px', height:'36px', borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontWeight: 800, fontSize:'16px', color:'var(--bg)', boxShadow: '0 4px 12px rgba(99,102,241,0.2)', marginTop: '4px' }}>P</div>
                 )}
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px', maxWidth:'80%' }}>
                   <div style={{ 
@@ -343,7 +344,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
                       background:'linear-gradient(135deg, var(--gold), var(--gold-dim))', 
                       color:'var(--bg)',
                       fontWeight: 500,
-                      boxShadow: '0 10px 25px rgba(212,168,83,0.15)'
+                      boxShadow: '0 10px 25px rgba(99,102,241,0.15)'
                     } : { 
                       borderBottomLeftRadius:'4px', 
                       background:'rgba(255,255,255,0.03)', 
@@ -387,24 +388,40 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         <div ref={endRef} />
       </div>
 
-      <div style={{ padding:'24px 32px 32px', borderTop:'1px solid rgba(255,255,255,0.05)', flexShrink:0 }}>
+      <div style={{ padding:'24px 32px 32px', borderTop:'1px solid var(--border)', flexShrink:0 }}>
         <div 
-          className="glass-morphism"
           style={{ 
             display:'flex', 
             alignItems:'flex-end', 
             gap:'12px', 
-            background:'rgba(255,255,255,0.02)', 
-            border:'1px solid rgba(255,255,255,0.1)', 
-            borderRadius:'24px', 
-            padding:'12px 16px',
-            boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
-            transition: 'all 0.3s'
+            background:'var(--surface2)', 
+            border:'1px solid var(--border)', 
+            borderRadius:'18px', 
+            padding:'10px 14px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative'
           }}
-          onFocusCapture={e => e.currentTarget.style.borderColor = 'rgba(212,168,83,0.4)'}
-          onBlurCapture={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+          onFocusCapture={e => e.currentTarget.style.borderColor = 'var(--gold)'}
+          onBlurCapture={e => e.currentTarget.style.borderColor = 'var(--border)'}
         >
-          <textarea ref={taRef} style={{ flex:1, border:'none', outline:'none', background:'transparent', color:'var(--text)', fontSize:'15px', lineHeight:1.6, resize:'none', minHeight:'24px', maxHeight:'140px', padding: '4px 0' }}
+          <textarea 
+            ref={taRef} 
+            style={{ 
+              flex:1, 
+              border:'none', 
+              outline:'none', 
+              background:'transparent', 
+              color:'var(--text)', 
+              fontSize:'15px', 
+              lineHeight:1.6, 
+              resize:'none', 
+              minHeight:'24px', 
+              maxHeight:'140px', 
+              padding: '6px 4px',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
             placeholder={selectedModel === 'off' ? 'Choose a model above to begin...' : (session ? 'Describe your career challenge...' : 'Start a new session to chat...')}
             value={input} onChange={e => { setInput(e.target.value); resize() }}
             onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
@@ -421,7 +438,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
               display:'flex', 
               alignItems:'center', 
               justifyContent:'center', 
-              boxShadow: '0 5px 15px rgba(212,168,83,0.2)',
+              boxShadow: '0 5px 15px rgba(99,102,241,0.2)',
               transition: 'all 0.3s',
               opacity: (!input.trim()||isTyping||!session||selectedModel === 'off')?0.4:1,
               cursor: (!input.trim()||isTyping||!session||selectedModel === 'off')?'default':'pointer'

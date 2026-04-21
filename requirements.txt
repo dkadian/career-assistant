@@ -15,3 +15,5 @@ anthropic
 transformers
 torch
 accelerate
+passlib[bcrypt]
+bcrypt

@@ -5,7 +5,20 @@ from fastapi import APIRouter, HTTPException, Depends
 from aiosqlite import Connection
 
 from app.database import get_db
-from app.schemas.schemas import UserCreate, UserOut, ProfileUpsert, ProfileOut, UploadFile, File, ResumeUploadResponse
+from app.schemas.schemas import UserCreate, UserLogin, UserOut, ProfileUpsert, ProfileOut, UploadFile, File, ResumeUploadResponse
+import bcrypt
+
+def get_password_hash(password):
+    # Truncate to 72 bytes as per bcrypt specification
+    pwd_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(pwd_bytes, salt)
+    return hashed.decode('utf-8')
+
+def verify_password(plain_password, hashed_password):
+    pwd_bytes = plain_password.encode('utf-8')[:72]
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
 
 router = APIRouter()
 
@@ -17,11 +30,25 @@ async def create_user(payload: UserCreate, db: Connection = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Email already registered.")
     user_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
-    await db.execute("INSERT INTO users (id, name, email, created_at) VALUES (?, ?, ?, ?)",
-        (user_id, payload.name, payload.email, now))
+    hashed_password = get_password_hash(payload.password)
+    await db.execute("INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+        (user_id, payload.name, payload.email, hashed_password, now))
     await db.commit()
     return UserOut(id=user_id, name=payload.name, email=payload.email,
                    created_at=datetime.fromisoformat(now))
+
+@router.post("/login", response_model=UserOut)
+async def login(payload: UserLogin, db: Connection = Depends(get_db)):
+    async with db.execute("SELECT * FROM users WHERE email = ?", (payload.email,)) as cur:
+        row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    
+    user_data = dict(row)
+    if not verify_password(payload.password, user_data.get("password_hash")):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    
+    return UserOut(**user_data)
 
 @router.get("/users/{user_id}", response_model=UserOut)
 async def get_user(user_id: str, db: Connection = Depends(get_db)):

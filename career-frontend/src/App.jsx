@@ -14,6 +14,7 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') !== 'light')
 
   useEffect(() => {
     const userId = localStorage.getItem('userId')
@@ -26,6 +27,18 @@ export default function App() {
     }
     setLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.remove('light-mode')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.body.classList.add('light-mode')
+      localStorage.setItem('theme', 'light')
+    }
+  }, [darkMode])
+
+  const toggleTheme = () => setDarkMode(!darkMode)
 
   async function loadSessions(userId) {
     try { const data = await api.getSessions(userId); setSessions(data) } catch (e) {}
@@ -91,7 +104,34 @@ export default function App() {
   )
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
+      <button 
+        onClick={toggleTheme}
+        style={{ 
+          position: 'absolute', 
+          bottom: '24px', 
+          right: '24px', 
+          zIndex: 1000, 
+          background: 'var(--surface2)', 
+          border: '1px solid var(--border)', 
+          color: 'var(--text)', 
+          width: '44px', 
+          height: '44px', 
+          borderRadius: '14px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          cursor: 'pointer',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          fontSize: '18px'
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      >
+        {darkMode ? '☀️' : '🌙'}
+      </button>
       {!user && <AuthPage onAuth={handleAuth} />}
 {showProfile && user && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
       <Sidebar user={user} profile={profile} sessions={sessions} activeSessionId={activeSession?.id}
