@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 import json
 import re
 from fastapi import APIRouter, Depends, HTTPException

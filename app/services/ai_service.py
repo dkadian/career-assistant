@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 import os
 import json
 from typing import List, Dict, Optional, AsyncGenerator

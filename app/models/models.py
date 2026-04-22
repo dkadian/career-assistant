@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

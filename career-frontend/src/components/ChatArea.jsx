@@ -647,7 +647,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
           )}
         </div>
         <div style={{ fontSize:'11px', color:'var(--text3)', textAlign:'center', marginTop:'12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
-          Shift + Enter for new line • Personalised by your profile
+          Shift + Enter for new line • Personalised by your profile • MIT Licensed
         </div>
       </div>
     </div>

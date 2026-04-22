@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 from dotenv import load_dotenv
 load_dotenv()
 

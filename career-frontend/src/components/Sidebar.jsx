@@ -307,6 +307,9 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
           </button>
         )}
       </div>
+      <div style={{ padding: '0 24px 16px', fontSize: '10px', color: 'var(--text3)', opacity: 0.5, textAlign: 'center' }}>
+        MIT Licensed • © 2026 Pathfinder
+      </div>
     </aside>
   )
 }

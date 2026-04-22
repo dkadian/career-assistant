@@ -1078,6 +1078,12 @@ const carouselSlides = [
           </div>
         </div>
       )}
+      <div style={{ padding: '48px 24px', borderTop: '1px solid var(--border)', background: 'var(--surface)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 700, marginBottom: '8px' }}>Pathfinder AI Counsellor</div>
+        <div style={{ fontSize: '12px', color: 'var(--text3)', opacity: 0.6 }}>
+          MIT Licensed • © 2026 Pathfinder • Open Source Career Intelligence
+        </div>
+      </div>
     </div>
   )
 }

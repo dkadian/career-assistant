@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 from typing import Any, Dict, List, Optional
 import io
 import json

@@ -102,3 +102,10 @@ The frontend will be available at `http://localhost:5173`.
 - **Backend:** FastAPI, Python, aiosqlite (Asynchronous SQLite).
 - **AI/ML:** Integration with Cloud LLMs via OpenRouter/Anthropic and Local LLMs via LM Studio/HuggingFace.
 - **Parsing:** PyMuPDF & python-docx for document processing.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
