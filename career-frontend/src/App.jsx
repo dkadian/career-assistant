@@ -105,42 +105,29 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
-      <button 
-        onClick={toggleTheme}
-        style={{ 
-          position: 'absolute', 
-          bottom: '24px', 
-          right: '24px', 
-          zIndex: 1000, 
-          background: 'var(--surface2)', 
-          border: '1px solid var(--border)', 
-          color: 'var(--text)', 
-          width: '44px', 
-          height: '44px', 
-          borderRadius: '14px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          cursor: 'pointer',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          fontSize: '18px'
-        }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      >
-        {darkMode ? '☀️' : '🌙'}
-      </button>
-      {!user && <AuthPage onAuth={handleAuth} />}
-{showProfile && user && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
-      <Sidebar user={user} profile={profile} sessions={sessions} activeSessionId={activeSession?.id}
-        onNewSession={handleNewSession} onSelectSession={handleSelectSession}
-        onEditProfile={() => setShowProfile(true)} onDeleteSession={handleDeleteSession}
-        onRenameSession={handleRenameSession}
-        onLogout={handleLogout} />
-      <ChatArea key={refreshKey} user={user} session={activeSession} messages={messages} setMessages={setMessages}
-        onSessionsRefresh={refreshSessions} onRenameSession={handleRenameSession} />
+      {!user ? (
+        <AuthPage onAuth={handleAuth} darkMode={darkMode} toggleTheme={toggleTheme} />
+      ) : (
+        <>
+          {showProfile && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
+          <Sidebar 
+            user={user} 
+            profile={profile} 
+            sessions={sessions} 
+            activeSessionId={activeSession?.id}
+            darkMode={darkMode}
+            toggleTheme={toggleTheme}
+            onNewSession={handleNewSession} 
+            onSelectSession={handleSelectSession}
+            onEditProfile={() => setShowProfile(true)} 
+            onDeleteSession={handleDeleteSession}
+            onRenameSession={handleRenameSession}
+            onLogout={handleLogout} 
+          />
+          <ChatArea key={refreshKey} user={user} session={activeSession} messages={messages} setMessages={setMessages}
+            onSessionsRefresh={refreshSessions} onRenameSession={handleRenameSession} />
+        </>
+      )}
     </div>
   )
 }

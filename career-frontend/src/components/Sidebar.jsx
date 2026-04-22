@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Sidebar({ user, profile, sessions, activeSessionId, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onRenameSession, onLogout }) {
+export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onRenameSession, onLogout }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
@@ -44,12 +44,92 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, onNe
 
   return (
     <aside style={{ width:'300px', minWidth:'300px', background:'var(--surface)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', height:'100vh', position: 'relative', zIndex: 10 }}>
+      <div style={{ padding: '24px 24px 0' }}>
+        <button 
+          onClick={toggleTheme}
+          style={{ 
+            background: 'var(--surface2)', 
+            border: '1px solid var(--border)', 
+            color: 'var(--text2)', 
+            cursor: 'pointer',
+            fontSize: '16px',
+            width: '38px',
+            height: '38px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'var(--gold)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'var(--border)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+          }}
+          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
+      </div>
       <div style={{ padding:'32px 24px 24px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'6px' }}>
-          <div className="premium-gradient" style={{ width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg)', fontWeight: 800, fontSize: '18px', boxShadow: '0 8px 20px rgba(99,102,241,0.2)' }}>P</div>
-          <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight: 700, color:'var(--text)', letterSpacing: '-0.5px' }}>Pathfinder</span>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'4px' }}>
+          <div className="premium-gradient" style={{ 
+            width: '42px', 
+            height: '42px', 
+            borderRadius: '14px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: 'var(--bg)', 
+            boxShadow: '0 12px 24px rgba(99,102,241,0.25)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Glossy overlay */}
+            <div style={{
+              position: 'absolute',
+              top: '-20%',
+              left: '-20%',
+              width: '140%',
+              height: '140%',
+              background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)',
+              pointerEvents: 'none'
+            }}></div>
+
+            {/* Creative North Star Compass Logo */}
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" opacity="0.3" />
+              <path d="M12 2L12 22" opacity="0.5" />
+              <path d="M2 12L22 12" opacity="0.5" />
+              <path d="M12 7l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" fill="white" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ 
+              fontFamily:"'Cormorant Garamond',serif", 
+              fontSize:'24px', 
+              fontWeight: 800, 
+              color:'var(--text)', 
+              letterSpacing: '-0.5px',
+              lineHeight: 1
+            }}>Pathfinder</span>
+            <span style={{ 
+              fontSize:'10px', 
+              letterSpacing:'1.5px', 
+              textTransform:'uppercase', 
+              color:'var(--gold)', 
+              fontWeight: 800, 
+              opacity: 0.9,
+              marginTop: '4px'
+            }}>AI Counsellor</span>
+          </div>
         </div>
-        <div style={{ fontSize:'10px', letterSpacing:'2.5px', textTransform:'uppercase', color:'var(--gold)', fontWeight: 700, opacity: 0.8, paddingLeft: '44px' }}>AI Counsellor</div>
       </div>
 
       <div style={{ padding:'24px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>

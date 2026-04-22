@@ -19,7 +19,7 @@ export const api = {
   updateSession: (sessionId, title) => req(`/sessions/${sessionId}`, { method: 'PUT', body: JSON.stringify({ title }) }),
   getSession: (sessionId) => req(`/sessions/${sessionId}`),
   deleteSession: (sessionId) => req(`/sessions/${sessionId}`, { method: 'DELETE' }),
-  sendMessage: async (sessionId, userId, message, stream=false, useHf=false, useLm=false) => {
+  sendMessage: async (sessionId, userId, message, stream=false, useHf=false, useLm=false, signal=null) => {
     const params = new URLSearchParams({ 
       stream: stream ? 'true' : 'false',
       use_hf: useHf ? 'true' : 'false',
@@ -29,6 +29,7 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, user_id: userId, message }),
+      signal
     })
     if (res.ok) {
       if (stream) {

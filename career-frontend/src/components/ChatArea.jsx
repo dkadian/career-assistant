@@ -67,16 +67,16 @@ function normalizeMarkdown(text) {
 }
 
 const markdownComponents = {
-  p: ({ children }) => <p style={{ margin: '0 0 10px', lineHeight: 1.75 }}>{children}</p>,
+  p: ({ children }) => <p style={{ margin: '0 0 10px', lineHeight: 1.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{children}</p>,
   ul: ({ children }) => <ul style={{ margin: '6px 0 12px 20px', padding: 0, display: 'grid', gap: '8px' }}>{children}</ul>,
   ol: ({ children }) => <ol style={{ margin: '6px 0 12px 20px', padding: 0, display: 'grid', gap: '8px' }}>{children}</ol>,
-  li: ({ children }) => <li style={{ lineHeight: 1.7 }}>{children}</li>,
+  li: ({ children }) => <li style={{ lineHeight: 1.7, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{children}</li>,
   h1: ({ children }) => <h1 style={{ fontSize: '20px', margin: '8px 0 10px', lineHeight: 1.3 }}>{children}</h1>,
   h2: ({ children }) => <h2 style={{ fontSize: '18px', margin: '8px 0 10px', lineHeight: 1.35 }}>{children}</h2>,
   h3: ({ children }) => <h3 style={{ fontSize: '16px', margin: '8px 0 8px', lineHeight: 1.4 }}>{children}</h3>,
   strong: ({ children }) => <strong style={{ color: 'var(--text)' }}>{children}</strong>,
   em: ({ children }) => <em style={{ color: 'var(--text2)' }}>{children}</em>,
-  code: ({ children }) => <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '5px', fontSize: '12px' }}>{children}</code>,
+  code: ({ children }) => <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '5px', fontSize: '12px', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{children}</code>,
   a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>{children}</a>,
   hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border2)', margin: '12px 0' }} />,
   table: ({ children }) => <div style={{ overflowX: 'auto', margin: '16px 0', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}><table style={{ width: '100%', borderCollapse: 'collapse', borderSpacing: 0, background: 'var(--surface2)', borderRadius: '12px', overflow: 'hidden' }}>{children}</table></div>,
@@ -92,14 +92,43 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
   const [isTyping, setIsTyping] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const lastAsstRef = useRef(null)
+  const abortControllerRef = useRef(null)
   const [selectedModel, setSelectedModel] = useState('off');
   const endRef = useRef(null)
   const taRef = useRef(null)
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
   const isModelActive = selectedModel !== 'off';
+  const modelColor = selectedModel === 'openrouter' ? 'var(--gold)' : selectedModel === 'lmstudio' ? 'var(--rust)' : 'var(--text3)';
+  const modelGlow = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.15)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.15)' : 'transparent';
+  const modelBg = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.1)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.02)';
+  const modelBorder = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.3)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.3)' : 'rgba(255,255,255,0.05)';
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
+  useEffect(() => {
+    // Abort active generation if session changes
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }
+  }, [session?.id])
+
+  useEffect(() => { 
+    const container = endRef.current?.parentElement;
+    if (container) {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+      if (isNearBottom) {
+        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [messages, isTyping])
+
+  function stopGeneration() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsTyping(false);
+    }
+  }
 
   function resize() {
     const t = taRef.current; if (!t) return
@@ -118,10 +147,14 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
     const userMsg = { role:'user', content:msg, created_at: new Date().toISOString(), id:'tmp-'+Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true)
+    
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     try {
       const useHf = selectedModel === 'openrouter';
       const useLm = selectedModel === 'lmstudio';
-      const streamRes = await api.sendMessage(session.id, user.id, msg, true, useHf, useLm)
+      const streamRes = await api.sendMessage(session.id, user.id, msg, true, useHf, useLm, abortController.signal)
       const asstMsg = { role:'assistant', content:'', created_at: new Date().toISOString(), id:'tmp-asst-'+Date.now() }
       setMessages(prev => [...prev, asstMsg])
       lastAsstRef.current = asstMsg.id
@@ -192,10 +225,15 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         onRenameSession(session.id, title)
       }
     } catch(e) {
-      setMessages(prev => prev.slice(0, -1).concat({ role:'assistant', content: 'Error: ' + e.message, created_at: new Date().toISOString(), id:'err-'+Date.now() }))
+      if (e.name === 'AbortError') {
+        console.log('Fetch aborted');
+      } else {
+        setMessages(prev => prev.slice(0, -1).concat({ role:'assistant', content: 'Error: ' + e.message, created_at: new Date().toISOString(), id:'err-'+Date.now() }))
+      }
     } finally { 
       setIsTyping(false) 
       lastAsstRef.current = null
+      abortControllerRef.current = null
     }
   }
 
@@ -218,14 +256,14 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
             width: '44px', 
             height: '44px', 
             borderRadius: '12px', 
-            background: isModelActive ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
-            border: `1px solid ${isModelActive ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)'}`,
+            background: modelBg,
+            border: `1px solid ${modelBorder}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: isModelActive ? '0 0 20px rgba(99,102,241,0.15)' : 'none',
+            boxShadow: isModelActive ? `0 0 20px ${modelGlow}` : 'none',
             animation: isModelActive ? 'float 4s ease-in-out infinite' : 'none'
           }}>
             <div style={{
@@ -236,12 +274,12 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
             }}>
               {/* Bot Face */}
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="6" width="20" height="14" rx="5" stroke={isModelActive ? 'var(--gold)' : 'var(--text3)'} strokeWidth="2" />
-                <path d="M7 11V13" stroke={isModelActive ? 'var(--gold)' : 'var(--text3)'} strokeWidth="2" strokeLinecap="round" />
-                <path d="M17 11V13" stroke={isModelActive ? 'var(--gold)' : 'var(--text3)'} strokeWidth="2" strokeLinecap="round" />
-                <path d="M10 16C10 16 11 17 12 17C13 17 14 16 14 16" stroke={isModelActive ? 'var(--gold)' : 'var(--text3)'} strokeWidth="1.5" strokeLinecap="round" />
+                <rect x="2" y="6" width="20" height="14" rx="5" stroke={isModelActive ? modelColor : 'var(--text3)'} strokeWidth="2" />
+                <path d="M7 11V13" stroke={isModelActive ? modelColor : 'var(--text3)'} strokeWidth="2" strokeLinecap="round" />
+                <path d="M17 11V13" stroke={isModelActive ? modelColor : 'var(--text3)'} strokeWidth="2" strokeLinecap="round" />
+                <path d="M10 16C10 16 11 17 12 17C13 17 14 16 14 16" stroke={isModelActive ? modelColor : 'var(--text3)'} strokeWidth="1.5" strokeLinecap="round" />
                 {isModelActive && (
-                   <circle cx="12" cy="3" r="1.5" fill="var(--gold)" style={{ animation: 'pulse 1s infinite' }} />
+                   <circle cx="12" cy="3" r="1.5" fill={modelColor} style={{ animation: 'pulse 1s infinite' }} />
                 )}
               </svg>
             </div>
@@ -253,7 +291,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
               width: '12px',
               height: '12px',
               borderRadius: '50%',
-              background: isModelActive ? 'var(--sage)' : 'var(--text3)',
+              background: isModelActive ? (selectedModel === 'openrouter' ? 'var(--sage)' : modelColor) : 'var(--text3)',
               border: '2px solid var(--bg)',
               animation: isModelActive ? 'pulse 2s infinite' : 'none'
             }} />
@@ -262,10 +300,10 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
           <div>
             <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:700, color:'var(--text)', letterSpacing: '-0.3px' }}>{session ? session.title : greeting + ', ' + (user?.name?.split(' ')[0]||'')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop:'2px' }}>
-              <div style={{ fontSize:'10px', color: isModelActive ? 'var(--gold)' : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <div style={{ fontSize:'10px', color: isModelActive ? modelColor : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
                 {isModelActive ? `${selectedModel === 'openrouter' ? 'Cloud' : 'Local'} AI Active` : 'AI Sleeping'}
               </div>
-              {isTyping && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--gold)', animation: 'pulse 1s infinite' }} />}
+              {isTyping && <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: modelColor, animation: 'pulse 1s infinite' }} />}
             </div>
           </div>
         </div>
@@ -304,8 +342,105 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
       <div style={{ flex:1, overflowY:'auto', padding:'32px', display:'flex', flexDirection:'column', gap:'24px' }}>
         {!session || messages.length === 0 ? (
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'40px 20px', animation:'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
-            <div className="premium-gradient" style={{ width:'80px', height:'80px', borderRadius:'24px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'24px', boxShadow: '0 20px 40px rgba(99,102,241,0.15)', animation: 'float 6s ease-in-out infinite' }}>
-              <span style={{ fontSize: '32px' }}>✦</span>
+            <div style={{ 
+              width:'120px', 
+              height:'120px', 
+              position: 'relative',
+              marginBottom:'40px',
+              animation: 'float 5s ease-in-out infinite',
+            }}>
+              {/* Soft outer glow */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '180%',
+                height: '180%',
+                background: `radial-gradient(circle, ${modelGlow} 0%, transparent 70%)`,
+                zIndex: -1
+              }}></div>
+              
+              {/* 3D Sphere Body */}
+              <div style={{
+                width: '100%',
+                height: '100%',
+                background: isModelActive ? `linear-gradient(145deg, ${modelColor}, ${selectedModel === 'openrouter' ? '#4f46e5' : '#e11d48'})` : 'linear-gradient(145deg, var(--surface2), var(--surface))',
+                borderRadius: '40px',
+                boxShadow: isModelActive ? `0 30px 60px rgba(0,0,0,0.3), inset -8px -8px 20px rgba(0,0,0,0.2), inset 8px 8px 20px rgba(255,255,255,0.3)` : '0 10px 30px rgba(0,0,0,0.1), inset -4px -4px 10px rgba(0,0,0,0.2), inset 4px 4px 10px rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}>
+                {/* Visor Area */}
+                <div style={{
+                  width: '70%',
+                  height: '35%',
+                  background: '#1a1b26',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.5)',
+                  border: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                  {/* Glowing Eyes */}
+                  <div style={{ width: '10px', height: '10px', background: isModelActive ? '#fff' : 'var(--text3)', borderRadius: '50%', boxShadow: isModelActive ? '0 0 15px #fff' : 'none', animation: isModelActive ? 'pulse 2s infinite' : 'none' }}></div>
+                  <div style={{ width: '10px', height: '10px', background: isModelActive ? '#fff' : 'var(--text3)', borderRadius: '50%', boxShadow: isModelActive ? '0 0 15px #fff' : 'none', animation: isModelActive ? 'pulse 2s infinite' : 'none' }}></div>
+                </div>
+                {/* Mouth Line */}
+                <div style={{
+                  width: '30%',
+                  height: '4px',
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '2px'
+                }}></div>
+              </div>
+
+              {/* Floating Antenna */}
+              <div style={{
+                position: 'absolute',
+                top: '-20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '4px',
+                height: '25px',
+                background: `linear-gradient(to top, ${modelColor}, transparent)`,
+                borderRadius: '2px',
+                transition: 'all 0.5s'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '12px',
+                  height: '12px',
+                  background: modelColor,
+                  borderRadius: '50%',
+                  boxShadow: isModelActive ? `0 0 20px ${modelColor}` : 'none',
+                  animation: isModelActive ? 'pulse 1s infinite' : 'none',
+                  transition: 'all 0.5s'
+                }}></div>
+              </div>
+
+              {/* Reflection Highlight */}
+              <div style={{
+                position: 'absolute',
+                top: '10%',
+                left: '15%',
+                width: '30%',
+                height: '20%',
+                background: 'linear-gradient(to bottom right, rgba(255,255,255,0.4), transparent)',
+                borderRadius: '50%',
+                filter: 'blur(4px)',
+                pointerEvents: 'none'
+              }}></div>
             </div>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:700, color:'var(--text)', lineHeight:1.1, marginBottom:'16px' }}>Ready to shape your future?</h2>
             <p style={{ fontSize:'15px', color:'var(--text2)', maxWidth:'420px', lineHeight:1.6, marginBottom:'40px', opacity: 0.8 }}>Choose a suggestion or type your own question to start your personalised career journey.</p>
@@ -328,17 +463,45 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         ) : (
           <>
             {messages.map((msg, i) => (
-              <div key={msg.id||i} style={{ display:'flex', gap:'16px', alignItems:'flex-start', justifyContent: msg.role==='user' ? 'flex-end' : 'flex-start', animation:'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+              <div key={msg.id||i} style={{ display:'flex', gap:'16px', alignItems:'flex-start', justifyContent: msg.role==='user' ? 'flex-end' : 'flex-start', animation:'fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
                 {msg.role==='assistant' && (
-                  <div className="premium-gradient" style={{ width:'36px', height:'36px', borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontWeight: 800, fontSize:'16px', color:'var(--bg)', boxShadow: '0 4px 12px rgba(99,102,241,0.2)', marginTop: '4px' }}>P</div>
+                  <div className="premium-gradient" style={{ 
+                    width:'36px', 
+                    height:'36px', 
+                    borderRadius:'12px', 
+                    flexShrink:0, 
+                    display:'flex', 
+                    alignItems:'center', 
+                    justifyContent:'center', 
+                    color:'var(--bg)', 
+                    boxShadow: '0 4px 12px rgba(99,102,241,0.2)', 
+                    marginTop: '4px',
+                    transition: 'transform 0.3s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="10" rx="2" />
+                      <circle cx="12" cy="5" r="2" />
+                      <path d="M12 7v4" />
+                      <line x1="8" y1="15" x2="8" y2="15.01" />
+                      <line x1="16" y1="15" x2="16" y2="15.01" />
+                    </svg>
+                  </div>
                 )}
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px', maxWidth:'80%' }}>
-                  <div style={{ 
+                  <div 
+                    className="message-bubble"
+                    style={{ 
                     padding:'16px 20px', 
                     borderRadius:'20px', 
                     fontSize:'15px', 
                     lineHeight:1.7, 
                     position: 'relative',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                     ...(msg.role==='user' ? { 
                       borderBottomRightRadius:'4px', 
                       background:'linear-gradient(135deg, var(--gold), var(--gold-dim))', 
@@ -353,12 +516,21 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
                       backdropFilter: 'blur(10px)',
                       boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
                     }) 
-                  }}>
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    if (msg.role === 'assistant') e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    if (msg.role === 'assistant') e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  }}
+                  >
                     {msg.role==='assistant' ? (
                       isTyping && msg.id === lastAsstRef.current && (selectedModel === 'openrouter' || selectedModel === 'lmstudio') ? (
                         <div 
                           key={'raw-' + msg.id}
-                          style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'inherit' }}
+                          style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'inherit', overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                         >
                           {msg.content}
                           <span style={{ display: 'inline-block', width: '2px', height: '15px', background: 'var(--gold)', marginLeft: '2px', verticalAlign: 'middle', animation: 'pulse 0.8s infinite' }} />
@@ -424,31 +596,55 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
             }}
             placeholder={selectedModel === 'off' ? 'Choose a model above to begin...' : (session ? 'Describe your career challenge...' : 'Start a new session to chat...')}
             value={input} onChange={e => { setInput(e.target.value); resize() }}
-            onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            disabled={!session || isTyping || selectedModel === 'off'} rows={1} />
-          <button 
-            className="premium-gradient"
-            style={{ 
-              width:'40px', 
-              height:'40px', 
-              flexShrink:0, 
-              border:'none', 
-              borderRadius:'14px', 
-              color:'var(--bg)', 
-              display:'flex', 
-              alignItems:'center', 
-              justifyContent:'center', 
-              boxShadow: '0 5px 15px rgba(99,102,241,0.2)',
-              transition: 'all 0.3s',
-              opacity: (!input.trim()||isTyping||!session||selectedModel === 'off')?0.4:1,
-              cursor: (!input.trim()||isTyping||!session||selectedModel === 'off')?'default':'pointer'
-            }}
-            onClick={() => send()} disabled={!input.trim()||isTyping||!session||selectedModel === 'off'}
-            onMouseEnter={e => !isTyping && input.trim() && (e.currentTarget.style.transform = 'scale(1.05)')}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
+            onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); if (!isTyping) send() } }}
+            disabled={!session || selectedModel === 'off'} rows={1} />
+          {isTyping ? (
+            <button 
+              style={{ 
+                width:'40px', 
+                height:'40px', 
+                flexShrink:0, 
+                border:'1px solid var(--rust)', 
+                borderRadius:'14px', 
+                color:'var(--rust)', 
+                background:'transparent',
+                display:'flex', 
+                alignItems:'center', 
+                justifyContent:'center', 
+                transition: 'all 0.3s',
+                cursor: 'pointer'
+              }}
+              onClick={stopGeneration}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(244,63,94,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            </button>
+          ) : (
+            <button 
+              className="premium-gradient"
+              style={{ 
+                width:'40px', 
+                height:'40px', 
+                flexShrink:0, 
+                border:'none', 
+                borderRadius:'14px', 
+                color:'var(--bg)', 
+                display:'flex', 
+                alignItems:'center', 
+                justifyContent:'center', 
+                boxShadow: '0 5px 15px rgba(99,102,241,0.2)',
+                transition: 'all 0.3s',
+                opacity: (!input.trim()||isTyping||!session||selectedModel === 'off')?0.4:1,
+                cursor: (!input.trim()||isTyping||!session||selectedModel === 'off')?'default':'pointer'
+              }}
+              onClick={() => send()} disabled={!input.trim()||isTyping||!session||selectedModel === 'off'}
+              onMouseEnter={e => !isTyping && input.trim() && (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          )}
         </div>
         <div style={{ fontSize:'11px', color:'var(--text3)', textAlign:'center', marginTop:'12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
           Shift + Enter for new line • Personalised by your profile

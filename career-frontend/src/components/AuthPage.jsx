@@ -86,7 +86,7 @@ const roadmapIllustration = makeIllustration('#f43f5e', '#6366f1', '#22C55E')
 const heroSceneIllustration = makeSceneIllustration()
 const chatIllustration = makeChatIllustration()
 
-export default function AuthPage({ onAuth }) {
+export default function AuthPage({ onAuth, darkMode, toggleTheme }) {
   const [showAuth, setShowAuth] = useState(false)
   const [mode, setMode] = useState('register')
   const [name, setName] = useState('')
@@ -204,16 +204,27 @@ const carouselSlides = [
       width: '42px',
       height: '42px',
       borderRadius: '14px',
-      background: 'var(--surface2)',
-      border: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: 'var(--gold)',
       fontSize: '18px',
-      boxShadow: '0 16px 36px rgba(0,0,0,0.24)',
+      boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
     },
-    navActions: { display: 'flex', gap: '10px', flexWrap: 'wrap' },
+    navActions: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+    themeToggle: {
+      width: '40px',
+      height: '40px',
+      borderRadius: '12px',
+      background: 'var(--surface2)',
+      border: '1px solid var(--border)',
+      color: 'var(--text2)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      fontSize: '16px',
+      transition: 'all 0.3s',
+    },
     ghostBtn: {
       padding: '12px 24px',
       background: 'var(--surface2)',
@@ -663,13 +674,43 @@ const carouselSlides = [
       <div style={s.shell}>
         <div style={s.nav}>
           <div style={s.brand}>
-            <div style={s.logo}>✦</div>
+            <div className="premium-gradient" style={{ 
+              ...s.logo, 
+              color: 'white', 
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Glossy overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '-20%',
+                left: '-20%',
+                width: '140%',
+                height: '140%',
+                background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)',
+                pointerEvents: 'none'
+              }}></div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" opacity="0.3" />
+                <path d="M12 7l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" fill="currentColor" />
+              </svg>
+            </div>
             <div>
-              <div style={{ fontSize: '15px', fontWeight: 700 }}>Pathfinder AI</div>
-              <div style={{ fontSize: '12px', color: 'var(--text3)' }}>Career guidance with resume-aware AI</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: "'Cormorant Garamond',serif", color: 'var(--text)', letterSpacing: '-0.5px' }}>Pathfinder</div>
+              <div style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>AI Counsellor</div>
             </div>
           </div>
           <div style={s.navActions}>
+            <button 
+              style={s.themeToggle}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              onClick={toggleTheme}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             <button 
               style={s.ghostBtn} 
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
@@ -842,24 +883,6 @@ const carouselSlides = [
                     ))}
                   </div>
                 </div>
-                <div 
-                  style={s.previewCard}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.4)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-                >
-                  <div style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: '8px' }}>Inside The Session</div>
-                  <div style={s.messageStack}>
-                    <div style={{ ...s.messageBubble, background: 'var(--gold-glow)', color: 'var(--text)', justifySelf: 'end', border: '1px solid var(--gold-glow)' }}>
-                      Which roles fit my resume best?
-                    </div>
-                    <div style={{ ...s.messageBubble, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
-                      Your strongest fits are AI/ML Engineer, Data Analyst, and Applied Python Developer based on your projects and technical stack.
-                    </div>
-                    <div style={{ ...s.messageBubble, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
-                      I can also build a 30-day roadmap for skills, projects, and interview prep.
-                    </div>
-                  </div>
-                </div>
                 <div style={s.visualGrid}>
                   <div 
                     style={s.pictureCard}
@@ -958,7 +981,32 @@ const carouselSlides = [
             >
               ×
             </button>
-            <div style={{ fontSize: '28px', color: 'var(--gold)', marginBottom: '16px' }}>⬢</div>
+            <div className="premium-gradient" style={{ 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '12px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: 'white', 
+              boxShadow: '0 8px 24px rgba(99,102,241,0.2)', 
+              marginBottom: '16px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '-20%',
+                left: '-20%',
+                width: '140%',
+                height: '140%',
+                background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)',
+                pointerEvents: 'none'
+              }}></div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 7l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" fill="currentColor" />
+              </svg>
+            </div>
             <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '28px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
               {isRegister ? 'Create Your Account' : 'Welcome Back'}
             </h2>
