@@ -48,8 +48,14 @@ function Mermaid({ chart }) {
 
 function normalizeMarkdown(text) {
   if (!text) return ''
+  
+  // Fix cases where AI forgets newlines around code blocks or puts them on the same line
+  let normalized = text
+    .replace(/([^\n])(```)/g, '$1\n$2')
+    .replace(/(```)([^\n\s])/g, '$1\n$2')
+
   // Only add newlines before headers and lists if they don't have them
-  return text
+  return normalized
     .replace(/^### (.*$)/gm, '\n### $1')
     .replace(/^## (.*$)/gm, '\n## $1')
     .replace(/^# (.*$)/gm, '\n# $1')
