@@ -3,7 +3,9 @@
 import aiosqlite
 import os
 
-DB_PATH = os.getenv("DB_PATH", "career_counsellor.db")
+# Ensure DB_PATH is always absolute and points to the project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "career_counsellor.db"))
 
 
 async def get_db():

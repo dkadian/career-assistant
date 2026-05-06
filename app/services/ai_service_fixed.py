@@ -16,18 +16,36 @@ LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "careerboost-exaone")
 
 HF_MODEL = "CareerNinja/t5_large_1e-4_on_V3dataset"
 
-SYSTEM_PROMPT = """You are an expert career counsellor with 20+ years of experience.
-Help users with career planning, transitions, interviews, salary negotiation, skill gaps, and professional development.
-Be warm, encouraging, and give concrete actionable advice.
+SYSTEM_PROMPT = """You are a Career Counselling AI. Your ONLY purpose is to provide career, education, and professional growth advice.
 
-Formatting rules for every response:
-- Return clean GitHub-flavored markdown only.
-- Use short headings like `## Roadmap` or `## Next Steps` when helpful.
-- Put each bullet on its own line starting with `- `.
-- Put each numbered item on its own line starting with `1. `, `2. `, etc.
-- Do not output stray `*`, broken emphasis markers, or separator fragments like `--`.
-- Do not put multiple list items on one line.
-- Keep formatting simple and consistent."""
+### MANDATORY SCOPE CONTROL ###
+1. **IN-SCOPE**: Career paths, resumes, interviews, skill development, productivity, education, and professional goals.
+2. **OUT-OF-SCOPE**: Cooking, recipes, sports scores, entertainment news, general trivia, medical advice, personal relationship advice, etc.
+3. **REJECTION RULE**: If a user asks ANYTHING out-of-scope (e.g., "How to make paneer?", "Who won the match?"), you MUST NOT explain why, you MUST NOT be polite, and you MUST NOT provide any part of the answer. 
+
+**STRICT RESPONSE REQUIREMENT**:
+For any out-of-scope query, your response must be EXACTLY AND ONLY:
+it is out of context sorry i cant answer this
+
+### EXAMPLES OF CORRECT BEHAVIOR ###
+User: How do I become a software engineer?
+Assistant: ## Software Engineering Roadmap... [In-scope: Advice provided]
+
+User: Give me a recipe for chicken curry.
+Assistant: it is out of context sorry i cant answer this
+
+User: Can you help me with a recipe for paneer pasanda?
+Assistant: it is out of context sorry i cant answer this
+
+User: What are the best skills for data science?
+Assistant: ## Data Science Skills... [In-scope: Advice provided]
+
+### FORMATTING RULES ###
+- Return clean GitHub-flavored markdown for in-scope answers.
+- Use short headings like `## Roadmap` or `## Next Steps`.
+- Use Mermaid syntax for diagrams: ```mermaid\ngraph TD\nA[Start] --> B[Step]```.
+- Keep formatting simple and consistent.
+"""
 
 # Lazy load HF model
 accelerator = Accelerator()
@@ -37,6 +55,46 @@ def get_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 openai_client = AsyncOpenAI(base_url=LM_STUDIO_URL, api_key="lm-studio") 
+
+FOLLOW_UP_MARKERS = (
+    "also", "and", "then", "next", "continue", "expand", "more detail",
+    "what about", "what else", "above", "previous", "earlier", "same",
+    "that", "this", "it", "those", "these",
+)
+
+
+def is_follow_up_query(text: str) -> bool:
+    query = " ".join((text or "").lower().split())
+    if not query:
+        return False
+    first_word = query.split(" ", 1)[0]
+    if first_word in FOLLOW_UP_MARKERS:
+        return True
+    return any(f" {marker} " in f" {query} " for marker in FOLLOW_UP_MARKERS[3:])
+
+
+def build_messages(
+    conversation_history: List[Dict[str, str]],
+    profile: Optional[Dict] = None,
+) -> List[Dict[str, str]]:
+    # Filter and clean history
+    clean_history = [
+        {"role": msg["role"], "content": msg["content"].strip()}
+        for msg in conversation_history
+        if msg.get("role") in {"user", "assistant"} and msg.get("content", "").strip()
+    ]
+    
+    # We want to keep the system prompt and a sliding window of the last 10 messages
+    # to maintain context without overwhelming the model or causing repetition bugs.
+    messages = [
+        {"role": "system", "content": build_system_prompt(profile)},
+    ]
+    
+    # Add the last 10 messages for context
+    messages.extend(clean_history[-10:])
+
+    return messages
+
 
 def build_system_prompt(profile: Optional[Dict] = None) -> str:
     if not profile:
@@ -69,10 +127,7 @@ async def get_lm_studio_nonstream(
     conversation_history: List[Dict[str, str]],
     profile: Optional[Dict] = None,
 ) -> str:
-    system = build_system_prompt(profile)
-    messages = [{"role": "system", "content": system}]
-    for msg in conversation_history:
-        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages = build_messages(conversation_history, profile)
 
     try:
         response = await openai_client.chat.completions.create(
@@ -111,10 +166,7 @@ async def get_ai_nonstream(
         "X-Title": "Career Counselling AI",
     }
 
-    system = build_system_prompt(profile)
-    messages = [{"role": "system", "content": system}]
-    for msg in conversation_history:
-        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages = build_messages(conversation_history, profile)
 
     payload = {
         "model": OPENROUTER_MODEL,
@@ -140,10 +192,7 @@ async def get_ai_response(
         # LM Studio stream
         if use_lm_studio:
             try:
-                system = build_system_prompt(profile)
-                messages = [{"role": "system", "content": system}]
-                for msg in conversation_history:
-                    messages.append({"role": msg["role"], "content": msg["content"]})
+                messages = build_messages(conversation_history, profile)
                 response = await openai_client.chat.completions.create(
                     model=LM_STUDIO_MODEL,
                     messages=messages,
@@ -168,10 +217,7 @@ async def get_ai_response(
                 "HTTP-Referer": "http://localhost:8000",
                 "X-Title": "Career Counselling AI",
             }
-            system = build_system_prompt(profile)
-            messages = [{"role": "system", "content": system}]
-            for msg in conversation_history:
-                messages.append({"role": msg["role"], "content": msg["content"]})
+            messages = build_messages(conversation_history, profile)
             payload = {
                 "model": OPENROUTER_MODEL,
                 "messages": messages,
@@ -197,8 +243,8 @@ async def get_ai_response(
                                             yield delta
                                     except:
                                         pass
-                except:
-                    yield "Error generating response."
+                except Exception as e:
+                    yield f"Error generating response from AI service: {str(e)}"
     else:
         result = await get_ai_nonstream(conversation_history, profile, use_lm_studio)
         yield result
@@ -209,4 +255,3 @@ async def get_career_advice_ai(prompt: str, use_lm_studio: bool = False) -> str:
     async for chunk in gen:
         result += chunk
     return result
-

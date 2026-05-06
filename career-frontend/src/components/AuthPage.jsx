@@ -97,6 +97,13 @@ export default function AuthPage({ onAuth, darkMode, toggleTheme }) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHover, setIsHover] = useState(false)
   const [autoPlay, setAutoPlay] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
 const carouselSlides = [
     { img: dashboardImg, label: 'Dashboard Overview' },
@@ -179,11 +186,11 @@ const carouselSlides = [
     },
     shell: {
       width: '100%',
-      minHeight: '100vh',
-      padding: '28px',
+      minHeight: isMobile ? '100dvh' : '100vh',
+      padding: isMobile ? 'calc(16px + env(safe-area-inset-top, 0px)) 16px 16px' : '28px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '28px',
+      gap: isMobile ? '16px' : '28px',
       position: 'relative',
       zIndex: 1,
     },
@@ -191,7 +198,7 @@ const carouselSlides = [
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: '16px',
+      gap: isMobile ? '8px' : '16px',
       padding: '8px 2px',
     },
     brand: {
@@ -210,10 +217,10 @@ const carouselSlides = [
       fontSize: '18px',
       boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
     },
-    navActions: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+    navActions: { display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px', flexWrap: 'wrap' },
     themeToggle: {
-      width: '40px',
-      height: '40px',
+      width: isMobile ? '36px' : '40px',
+      height: isMobile ? '36px' : '40px',
       borderRadius: '12px',
       background: 'var(--surface2)',
       border: '1px solid var(--border)',
@@ -226,23 +233,24 @@ const carouselSlides = [
       transition: 'all 0.3s',
     },
     ghostBtn: {
-      padding: '12px 24px',
+      padding: isMobile ? '8px 12px' : '12px 24px',
       background: 'var(--surface2)',
       color: 'var(--text)',
       border: '1px solid var(--border)',
       borderRadius: '999px',
-      fontSize: '14px',
+      fontSize: isMobile ? '12px' : '14px',
       fontWeight: 600,
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       backdropFilter: 'blur(8px)',
+      display: isMobile ? 'none' : 'block',
     },
     goldBtn: {
-      padding: '12px 24px',
+      padding: isMobile ? '8px 16px' : '12px 24px',
       background: 'linear-gradient(135deg, var(--gold), var(--gold-dim))',
       color: 'white',
       border: 'none',
       borderRadius: '999px',
-      fontSize: '14px',
+      fontSize: isMobile ? '12px' : '14px',
       fontWeight: 700,
       boxShadow: '0 12px 30px rgba(99,102,241,0.3)',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -259,7 +267,7 @@ const carouselSlides = [
       background: 'var(--surface)',
       backdropFilter: 'blur(20px)',
       borderRadius: '40px',
-      padding: '48px',
+      padding: isMobile ? '24px' : '48px',
       boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
       position: 'relative',
       overflow: 'hidden',
@@ -286,8 +294,8 @@ const carouselSlides = [
     },
     heroTopGrid: {
       display: 'grid',
-      gridTemplateColumns: 'minmax(0, 1.18fr) minmax(320px, 0.82fr)',
-      gap: '24px',
+      gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.18fr) minmax(320px, 0.82fr)',
+      gap: isMobile ? '32px' : '24px',
       alignItems: 'start',
       position: 'relative',
       zIndex: 1,
@@ -331,7 +339,7 @@ const carouselSlides = [
     },
     statGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))',
       gap: '12px',
       marginTop: '24px',
     },
@@ -343,7 +351,7 @@ const carouselSlides = [
     },
     sectionTitle: {
       fontFamily: "'Cormorant Garamond',serif",
-      fontSize: '64px',
+      fontSize: isMobile ? '36px' : '64px',
       lineHeight: 1.05,
       color: 'var(--text)',
       fontWeight: 700,
@@ -374,7 +382,7 @@ const carouselSlides = [
     },
     cardRow: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))',
       gap: '14px',
       marginTop: '28px',
     },

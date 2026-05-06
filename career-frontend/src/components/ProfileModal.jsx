@@ -8,6 +8,13 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
   const [skills, setSkills] = useState([])
   const [interests, setInterests] = useState([])
   const [status, setStatus] = useState('')
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function mergeUniqueTags(current, incoming) {
     const seen = new Set()
@@ -86,38 +93,51 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
   const tag = { background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--gold)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(var(--bg-rgb), 0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="glass-morphism" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '32px', padding: '40px', width: '580px', maxWidth: '100%', boxShadow: '0 40px 100px rgba(0,0,0,0.4)', animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(var(--bg-rgb), 0.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: isMobile ? '0' : '20px' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="glass-morphism" style={{ 
+        background: 'var(--surface)', 
+        border: '1px solid var(--border)', 
+        borderRadius: isMobile ? '0' : '32px', 
+        padding: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px))' : '40px', 
+        width: '580px', 
+        height: isMobile ? '100%' : 'auto', 
+        maxHeight: isMobile ? '100dvh' : '90vh',
+        maxWidth: '100%', 
+        boxShadow: '0 40px 100px rgba(0,0,0,0.4)', 
+        animation: 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+        position: 'relative', 
+        overflowY: 'auto' 
+      }}>
         
         {/* Progress bar */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'var(--surface2)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '4px', background: 'var(--surface2)', zIndex: 110 }}>
           <div style={{ width: `${(step / 3) * 100}%`, height: '100%', background: 'var(--gold)', transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 15px var(--gold-glow)' }} />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
           <div>
             <div style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Step {step} of 3</div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '32px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.1 }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: isMobile ? '24px' : '32px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.1 }}>
               {step === 1 ? 'Basic Details' : step === 2 ? 'Skills & Expertise' : 'Goals & Future'}
             </h2>
           </div>
-          <button style={{ background: 'var(--surface2)', border: 'none', color: 'var(--text3)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onClick={onClose} onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}>×</button>
+          <button style={{ background: 'var(--surface2)', border: 'none', color: 'var(--text3)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', position: isMobile ? 'fixed' : 'relative', top: isMobile ? 'calc(12px + env(safe-area-inset-top, 0px))' : 'auto', right: isMobile ? '16px' : 'auto', zIndex: 110 }} onClick={onClose} onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}>×</button>
         </div>
 
         {error && <div style={{ background: 'var(--surface)', border: '1px solid var(--rust)', color: 'var(--rust)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{error}</div>}
         {status && <div style={{ background: 'var(--surface)', border: '1px solid var(--sage)', color: 'var(--sage)', padding: '12px 16px', borderRadius: '14px', fontSize: '13px', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>{status}</div>}
 
-        <div style={{ minHeight: '340px' }}>
+        <div style={{ minHeight: isMobile ? 'auto' : '340px' }}>
           {step === 1 && (
             <div style={{ animation: 'slideInRight 0.4s ease' }}>
               <div style={{ marginBottom: '24px' }}>
                 <label style={lbl}>Automatic Profile Setup</label>
-                <div style={{ background: 'var(--surface)', border: '1px dashed var(--border2)', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '16px' }}>Upload your resume to instantly fill your profile with extracted skills and experience.</div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ background: 'var(--surface)', border: '1px dashed var(--border2)', borderRadius: '20px', padding: isMobile ? '16px' : '24px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '16px' }}>Upload resume to instantly extract skills.</div>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '10px' }}>
                     <input type="file" id="resume-up" accept=".pdf,.docx" style={{ display: 'none' }} onChange={e => setResumeFile(e.target.files[0])} />
                     <label htmlFor="resume-up" style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text2)', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {resumeFile ? resumeFile.name : 'Select PDF or DOCX...'}
+                      {resumeFile ? resumeFile.name : 'Select File...'}
                     </label>
                     <button 
                       style={{ padding: '12px 24px', background: 'var(--gold)', color: 'var(--bg)', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '13px', opacity: uploading || !resumeFile ? 0.6 : 1, transition: 'all 0.2s', cursor: uploading || !resumeFile ? 'default' : 'pointer' }} 
@@ -130,7 +150,7 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '12px' : '20px' }}>
                 {[['Current Role','current_role','e.g. Software Engineer'],['Years Experience','years_experience','e.g. 5'],['Education','education','e.g. Masters in CS'],['Location','location','e.g. Remote / New York']].map(([l,k,p]) => (
                   <div key={k}>
                     <label style={lbl}>{l}</label>

@@ -51,7 +51,7 @@ async def get_session(session_id: str, db: Connection = Depends(get_db)):
         session = await cur.fetchone()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
-    async with db.execute("SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC", (session_id,)) as cur:
+    async with db.execute("SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC, id ASC", (session_id,)) as cur:
         msg_rows = await cur.fetchall()
     messages = [MessageOut(**dict(m)) for m in msg_rows]
     return SessionWithMessages(**dict(session), messages=messages)

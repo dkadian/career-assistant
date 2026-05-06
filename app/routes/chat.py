@@ -1,14 +1,16 @@
 import uuid
 import json
+import os
 from datetime import datetime, timezone
 from typing import AsyncGenerator
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
 from aiosqlite import Connection
 
-from app.database import get_db
+from app.database import get_db, DB_PATH
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services.ai_service_fixed import get_ai_response
+import aiosqlite
 
 router = APIRouter()
 
@@ -27,21 +29,62 @@ def normalize_profile(row) -> dict | None:
                 pass
     return profile
 
-async def stream_generator(history: list[dict[str, str]], profile: dict, payload: ChatRequest, db: Connection, asst_msg_id: str, reply_at: str, use_hf: bool = False, use_lm: bool = False) -> AsyncGenerator[str, None]:
+async def stream_generator(history: list[dict[str, str]], profile: dict, payload: ChatRequest, asst_msg_id: str, reply_at: str, use_hf: bool = False, use_lm: bool = False) -> AsyncGenerator[str, None]:
     full_reply = ""
-    async for chunk in get_ai_response(history, profile, use_hf, use_lm, stream=True):
-        full_reply += chunk
-        yield f"data: {json.dumps(chunk)}\n\n"
-    await db.execute(
-        "UPDATE messages SET content = ? WHERE id = ?",
-        (full_reply, asst_msg_id),
-    )
-    await db.execute(
-        "UPDATE sessions SET updated_at = ? WHERE id = ?",
-        (reply_at, payload.session_id),
-    )
-    await db.commit()
-    yield "data: [DONE]\n\n"
+    chunk_count = 0
+    
+    try:
+        async for chunk in get_ai_response(history, profile, use_hf, use_lm, stream=True):
+            if chunk:
+                full_reply += chunk
+                chunk_count += 1
+                yield f"data: {json.dumps(chunk)}\n\n"
+                
+                # Periodically save to DB every 20 chunks to ensure partial progress is kept
+                if chunk_count % 20 == 0:
+                    try:
+                        async with aiosqlite.connect(DB_PATH) as db_mid:
+                            await db_mid.execute(
+                                "UPDATE messages SET content = ? WHERE id = ?",
+                                (full_reply, asst_msg_id),
+                            )
+                            await db_mid.commit()
+                    except:
+                        pass
+    except Exception as e:
+        error_msg = f"\n\n[Error: {str(e)}]"
+        full_reply += error_msg
+        print(f"DEBUG ERROR: Streaming error for session {payload.session_id}: {e}")
+        try:
+            yield f"data: {json.dumps(error_msg)}\n\n"
+        except:
+            pass
+    finally:
+        # CRITICAL: This block runs even if the client disconnects (GeneratorExit)
+        if full_reply:
+            db_save = None
+            try:
+                db_save = await aiosqlite.connect(DB_PATH)
+                await db_save.execute(
+                    "UPDATE messages SET content = ? WHERE id = ?",
+                    (full_reply, asst_msg_id),
+                )
+                await db_save.execute(
+                    "UPDATE sessions SET updated_at = ? WHERE id = ?",
+                    (reply_at, payload.session_id),
+                )
+                await db_save.commit()
+                print(f"DEBUG: Final save successful for {asst_msg_id} (Length: {len(full_reply)})")
+            except Exception as db_err:
+                print(f"DEBUG ERROR: Final save failed for {asst_msg_id}: {db_err}")
+            finally:
+                if db_save:
+                    await db_save.close()
+
+        try:
+            yield "data: [DONE]\n\n"
+        except:
+            pass
 
 @router.post("/", response_model=ChatResponse)
 async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf: bool = Query(False), use_lm: bool = Query(False), db: Connection = Depends(get_db)):
@@ -63,7 +106,7 @@ async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf
     profile = normalize_profile(row)
 
     async with db.execute(
-        "SELECT role, content FROM messages WHERE session_id = ? ORDER BY created_at ASC",
+        "SELECT role, content FROM messages WHERE session_id = ? ORDER BY created_at ASC, id ASC",
         (payload.session_id,),
     ) as cur:
         rows = await cur.fetchall()
@@ -84,9 +127,10 @@ async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf
         "INSERT INTO messages (id, session_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
         (asst_msg_id, payload.session_id, "assistant", "", reply_at),
     )
+    await db.commit()
 
     if stream:
-        return StreamingResponse(stream_generator(history, profile or {}, payload, db, asst_msg_id, reply_at, use_hf, use_lm), media_type="text/plain")
+        return StreamingResponse(stream_generator(history, profile or {}, payload, asst_msg_id, reply_at, use_hf, use_lm), media_type="text/plain")
     else:
         try:
             gen = get_ai_response(history, profile, use_hf, use_lm)

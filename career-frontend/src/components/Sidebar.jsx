@@ -1,12 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onRenameSession, onLogout }) {
+export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onRenameSession, onLogout, isOpen, onClose }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
 
-  // Calculate profile completion percentage
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // ... (rest of the logic remains)
   const completionScore = () => {
     if (!profile) return 0;
     const fields = [
@@ -43,8 +50,21 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
   }
 
   return (
-    <aside style={{ width:'300px', minWidth:'300px', background:'var(--surface)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', height:'100vh', position: 'relative', zIndex: 10 }}>
-      <div style={{ padding: '24px 24px 0' }}>
+    <aside style={{ 
+      width: 'var(--sidebar-width)', 
+      minWidth: 'var(--sidebar-width)', 
+      background: 'var(--surface)', 
+      borderRight: '1px solid var(--border)', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100vh', 
+      position: isMobile ? 'fixed' : 'relative', 
+      left: isMobile ? (isOpen ? 0 : '-100%') : 0,
+      transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      zIndex: 50,
+      boxShadow: isMobile && isOpen ? '20px 0 50px rgba(0,0,0,0.5)' : 'none'
+    }}>
+      <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button 
           onClick={toggleTheme}
           style={{ 
@@ -76,6 +96,21 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
         >
           {darkMode ? '☀️' : '🌙'}
         </button>
+
+        {isMobile && (
+          <button 
+            onClick={onClose}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'var(--text2)', 
+              fontSize: '24px',
+              padding: '8px'
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
       <div style={{ padding:'32px 24px 24px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'4px' }}>
@@ -141,6 +176,8 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
         <div 
           onClick={onEditProfile}
           className="glass-morphism"
+          role="button"
+          aria-label="Edit Profile"
           style={{ 
             borderRadius:'24px', 
             padding:'20px', 
@@ -151,8 +188,18 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
             position: 'relative',
             overflow: 'hidden'
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)' }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none' }}
+          onMouseEnter={e => { 
+            e.currentTarget.style.transform = 'translateY(-4px)'; 
+            e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; 
+            e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
+            e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.15))';
+          }}
+          onMouseLeave={e => { 
+            e.currentTarget.style.transform = 'translateY(0)'; 
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; 
+            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.02), rgba(0,0,0,0.1))';
+          }}
         >
           {/* Circular Gauge Background */}
           <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1 }}>
@@ -307,9 +354,10 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
           </button>
         )}
       </div>
-      <div style={{ padding: '0 24px 16px', fontSize: '10px', color: 'var(--text3)', opacity: 0.5, textAlign: 'center' }}>
+      <div style={{ padding: isMobile ? '0 24px calc(16px + env(safe-area-inset-bottom, 0px))' : '0 24px 16px', fontSize: '10px', color: 'var(--text3)', opacity: 0.5, textAlign: 'center' }}>
         MIT Licensed • © 2026 Pathfinder
       </div>
-    </aside>
+      </aside>
+
   )
 }

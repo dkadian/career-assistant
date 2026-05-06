@@ -15,15 +15,32 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') !== 'light')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     const userId = localStorage.getItem('userId')
     const userName = localStorage.getItem('userName')
+    const savedSessionId = localStorage.getItem('activeSessionId')
+    
     if (userId && userName) {
       const u = { id: userId, name: userName }
       setUser(u)
-      loadSessions(userId)
       loadProfile(userId)
+      loadSessions(userId).then(sessionsData => {
+        if (savedSessionId && sessionsData) {
+          const exists = sessionsData.some(s => s.id === savedSessionId)
+          if (exists) {
+            handleSelectSession(savedSessionId)
+          }
+        }
+      })
     }
     setLoading(false)
   }, [])
@@ -41,7 +58,13 @@ export default function App() {
   const toggleTheme = () => setDarkMode(!darkMode)
 
   async function loadSessions(userId) {
-    try { const data = await api.getSessions(userId); setSessions(data) } catch (e) {}
+    try { 
+      const data = await api.getSessions(userId)
+      setSessions(data)
+      return data
+    } catch (e) {
+      return null
+    }
   }
 
   const refreshSessions = useCallback(() => {
@@ -63,6 +86,7 @@ export default function App() {
       setActiveSession(session)
       setMessages([])
       setRefreshKey(k => k + 1)
+      localStorage.setItem('activeSessionId', session.id)
     } catch (e) {}
   }
   async function handleSelectSession(sessionId) {
@@ -70,6 +94,7 @@ export default function App() {
       const session = await api.getSession(sessionId)
       setActiveSession(session)
       setMessages(session.messages || [])
+      localStorage.setItem('activeSessionId', sessionId)
     } catch (e) {}
   }
   async function handleRenameSession(sessionId, newTitle) {
@@ -83,13 +108,18 @@ export default function App() {
     try {
       await api.deleteSession(sessionId)
       setSessions(prev => prev.filter(s => s.id !== sessionId))
-      if (activeSession?.id === sessionId) { setActiveSession(null); setMessages([]) }
+      if (activeSession?.id === sessionId) { 
+        setActiveSession(null)
+        setMessages([])
+        localStorage.removeItem('activeSessionId')
+      }
     } catch (e) {}
   }
 
   function handleLogout() {
     localStorage.removeItem('userId')
     localStorage.removeItem('userName')
+    localStorage.removeItem('activeSessionId')
     setUser(null)
     setSessions([])
     setActiveSession(null)
@@ -104,12 +134,29 @@ export default function App() {
   )
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
+    <div style={{ display: 'flex', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
       {!user ? (
         <AuthPage onAuth={handleAuth} darkMode={darkMode} toggleTheme={toggleTheme} />
       ) : (
         <>
           {showProfile && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
+          
+          {/* Mobile Backdrop */}
+          {sidebarOpen && (
+            <div 
+              className="mobile-only"
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 40,
+                animation: 'fadeIn 0.2s ease-out'
+              }}
+            />
+          )}
+
           <Sidebar 
             user={user} 
             profile={profile} 
@@ -118,14 +165,24 @@ export default function App() {
             darkMode={darkMode}
             toggleTheme={toggleTheme}
             onNewSession={handleNewSession} 
-            onSelectSession={handleSelectSession}
+            onSelectSession={s => { handleSelectSession(s); setSidebarOpen(false); }}
             onEditProfile={() => setShowProfile(true)} 
             onDeleteSession={handleDeleteSession}
             onRenameSession={handleRenameSession}
-            onLogout={handleLogout} 
+            onLogout={handleLogout}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
           />
-          <ChatArea key={refreshKey} user={user} session={activeSession} messages={messages} setMessages={setMessages}
-            onSessionsRefresh={refreshSessions} onRenameSession={handleRenameSession} />
+          <ChatArea 
+            key={refreshKey} 
+            user={user} 
+            session={activeSession} 
+            messages={messages} 
+            setMessages={setMessages}
+            onSessionsRefresh={refreshSessions} 
+            onRenameSession={handleRenameSession}
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          />
         </>
       )}
     </div>
