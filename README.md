@@ -19,21 +19,16 @@ An AI-powered career counselling platform featuring a modern React frontend and 
 
 ```text
 .
-├── main.py                 # FastAPI application entry point
-├── career.py               # Career resources router (resume/interview/paths)
-├── requirements.txt        # Backend dependencies
-├── app/                    # Backend core logic
-│   ├── database.py         # aiosqlite connection and schema initialisation
-│   ├── models/             # Database models (User, Profile, Session, Message)
-│   ├── routes/             # API route handlers (chat, sessions, profile)
-│   ├── schemas/            # Pydantic data validation schemas
-│   └── services/           # AI and Resume parsing services
-└── career-frontend/        # React + Vite frontend
+.
+├── backend/                # FastAPI application
+│   ├── app/                # Backend core logic
+│   ├── main.py             # Entry point
+│   ├── career.py           # Career resources router
+│   ├── requirements.txt    # Dependencies
+│   └── venv/               # Virtual environment
+└── frontend/               # React + Vite frontend
     ├── src/
-    │   ├── api/            # API client for backend communication
-    │   ├── components/     # UI Components (Chat, Sidebar, Profile, Auth)
-    │   └── App.jsx         # Frontend application root
-    └── package.json        # Frontend dependencies
+    └── package.json
 ```
 
 ---
@@ -47,22 +42,27 @@ An AI-powered career counselling platform featuring a modern React frontend and 
 
 ### 2. Backend Setup
 ```bash
+cd backend
+
+# Create and activate virtual environment (if not already done)
+python3 -m venv venv
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your API keys (ANTHROPIC_API_KEY or OPENROUTER_API_KEY)
+# Edit .env with your API keys (OPENROUTER_API_KEY)
 
 # Start the server
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 The backend will be available at `http://localhost:8000`.  
-Interactive API docs: `http://localhost:8000/docs`
 
 ### 3. Frontend Setup
 ```bash
-cd career-frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -70,6 +70,7 @@ npm install
 # Start the development server
 npm run dev
 ```
+
 The frontend will be available at `http://localhost:5173`.
 
 ---

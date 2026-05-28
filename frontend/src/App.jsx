@@ -134,7 +134,17 @@ export default function App() {
   )
 
   return (
-    <div style={{ display: 'flex', height: isMobile ? '100dvh' : '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
+    <div 
+      className="fadeIn"
+      style={{ 
+        display: 'flex', 
+        height: isMobile ? '100dvh' : '100vh', 
+        overflow: 'hidden', 
+        background: 'var(--bg)', 
+        position: 'relative',
+        animationDuration: '1s'
+      }}
+    >
       {!user ? (
         <AuthPage onAuth={handleAuth} darkMode={darkMode} toggleTheme={toggleTheme} />
       ) : (

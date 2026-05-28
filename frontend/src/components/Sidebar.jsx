@@ -50,23 +50,27 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
   }
 
   return (
-    <aside style={{ 
-      width: 'var(--sidebar-width)', 
-      minWidth: 'var(--sidebar-width)', 
-      background: 'var(--surface)', 
-      borderRight: '1px solid var(--border)', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100vh', 
-      position: isMobile ? 'fixed' : 'relative', 
-      left: isMobile ? (isOpen ? 0 : '-100%') : 0,
-      transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      zIndex: 50,
-      boxShadow: isMobile && isOpen ? '20px 0 50px rgba(0,0,0,0.5)' : 'none'
-    }}>
+    <aside 
+      aria-label="Application Sidebar"
+      style={{ 
+        width: 'var(--sidebar-width)', 
+        minWidth: 'var(--sidebar-width)', 
+        background: 'var(--surface)', 
+        borderRight: '1px solid var(--border)', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100vh', 
+        position: isMobile ? 'fixed' : 'relative', 
+        left: isMobile ? (isOpen ? 0 : '-100%') : 0,
+        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 50,
+        boxShadow: isMobile && isOpen ? '20px 0 50px rgba(0,0,0,0.5)' : 'none'
+      }}
+    >
       <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button 
           onClick={toggleTheme}
+          aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           style={{ 
             background: 'var(--surface2)', 
             border: '1px solid var(--border)', 
@@ -92,7 +96,6 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
           }}
-          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
           {darkMode ? '☀️' : '🌙'}
         </button>
@@ -100,12 +103,14 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
         {isMobile && (
           <button 
             onClick={onClose}
+            aria-label="Close Sidebar"
             style={{ 
               background: 'transparent', 
               border: 'none', 
               color: 'var(--text2)', 
               fontSize: '24px',
-              padding: '8px'
+              padding: '8px',
+              cursor: 'pointer'
             }}
           >
             ✕
@@ -169,16 +174,17 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
 
       <div style={{ padding:'24px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:'16px' }}>
-          <div style={{ fontSize:'10px', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text3)', fontWeight: 700 }}>AI Intelligence Core</div>
+          <h3 style={{ fontSize:'10px', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text3)', fontWeight: 700, margin: 0 }}>AI Intelligence Core</h3>
           <div style={{ fontSize:'10px', color: status.color, fontWeight: 800 }}>{progress}%</div>
         </div>
 
-        <div 
+        <button 
           onClick={onEditProfile}
-          className="glass-morphism"
-          role="button"
-          aria-label="Edit Profile"
+          className="glass-morphism profile-btn"
+          aria-label={`Edit Profile. Current completeness: ${progress} percent.`}
           style={{ 
+            width: '100%',
+            textAlign: 'left',
             borderRadius:'24px', 
             padding:'20px', 
             cursor:'pointer', 
@@ -188,21 +194,9 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
             position: 'relative',
             overflow: 'hidden'
           }}
-          onMouseEnter={e => { 
-            e.currentTarget.style.transform = 'translateY(-4px)'; 
-            e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; 
-            e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
-            e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.15))';
-          }}
-          onMouseLeave={e => { 
-            e.currentTarget.style.transform = 'translateY(0)'; 
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; 
-            e.currentTarget.style.boxShadow = 'none';
-            e.currentTarget.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.02), rgba(0,0,0,0.1))';
-          }}
         >
           {/* Circular Gauge Background */}
-          <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1 }}>
+          <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1 }} aria-hidden="true">
             <svg width="100" height="100" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" />
               <circle cx="50" cy="50" r="40" fill="none" stroke={status.color} strokeWidth="8" strokeDasharray={`${(progress / 100) * 251.2} 251.2`} strokeLinecap="round" transform="rotate(-90 50 50)" />
@@ -236,57 +230,80 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
           {/* Quick Tip */}
           {progress < 100 && (
             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: 'var(--gold)' }}>💡</span>
+              <span style={{ color: 'var(--gold)' }} aria-hidden="true">💡</span>
               <span>Tip: {!profile?.career_goals ? 'Add goals for +20%' : !profile?.skills?.length ? 'Add skills for +20%' : 'Finish to maximize accuracy'}</span>
             </div>
           )}
-        </div>
+        </button>
       </div>
 
-      <div style={{ flex:1, padding:'20px 24px', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+      <nav style={{ flex:1, padding:'20px 24px', overflow:'hidden', display:'flex', flexDirection:'column' }} aria-label="Session Navigation">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:'12px' }}>
-          <div style={{ fontSize:'10px', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text3)', fontWeight: 700 }}>Conversations</div>
-          <div style={{ fontSize: '10px', color: 'var(--text3)' }}>{sessions.length}</div>
+          <h3 style={{ fontSize:'10px', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text3)', fontWeight: 700, margin: 0 }}>Conversations</h3>
+          <div style={{ fontSize: '10px', color: 'var(--text3)' }} aria-label={`${sessions.length} sessions total`}>{sessions.length}</div>
         </div>
         
         <button 
           className="premium-gradient"
-          style={{ width:'100%', padding:'12px', border:'none', borderRadius:'14px', color:'var(--bg)', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'20px', boxShadow: '0 8px 20px rgba(99,102,241,0.2)', transition: 'all 0.3s' }} 
+          aria-label="Start New Session"
+          style={{ width:'100%', padding:'12px', border:'none', borderRadius:'14px', color:'var(--bg)', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'20px', boxShadow: '0 8px 20px rgba(99,102,241,0.2)', transition: 'all 0.3s', cursor: 'pointer' }} 
           onClick={onNewSession}
           onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
           onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          <span style={{ fontSize: '18px' }}>+</span> New Session
+          <span style={{ fontSize: '18px' }} aria-hidden="true">+</span> New Session
         </button>
 
-        <div style={{ flex:1, overflowY:'auto', paddingRight: '4px' }} className="custom-scroll">
+        <div style={{ flex:1, overflowY:'auto', paddingRight: '4px' }} className="custom-scroll" role="list">
           {sessions.length === 0 && (
             <div style={{ fontSize:'12px', color:'var(--text3)', textAlign:'center', padding:'40px 0', opacity: 0.6 }}>
               No history yet
             </div>
           )}
-          {sessions.map(sess => (
-            <div key={sess.id}
+          {sessions.map((sess, i) => (
+            <button key={sess.id}
+              role="listitem"
+              className="message-entrance"
+              aria-current={sess.id===activeSessionId ? "true" : "false"}
+              aria-label={`Select session: ${sess.title}`}
               style={{ 
-                padding:'12px 14px', 
-                borderRadius:'14px', 
+                width: '100%',
+                textAlign: 'left',
+                padding:'14px 16px', 
+                borderRadius:'16px', 
                 cursor:'pointer', 
-                marginBottom:'6px', 
+                marginBottom:'8px', 
                 border:'1px solid transparent', 
                 display:'flex', 
                 alignItems:'center', 
                 justifyContent:'space-between', 
-                transition: 'all 0.2s ease',
-                background: sess.id===activeSessionId ? 'rgba(99,102,241,0.08)' : 'transparent', 
-                borderColor: sess.id===activeSessionId ? 'rgba(99,102,241,0.2)' : 'transparent' 
+                transition: 'all 0.3s var(--ease-out-expo)',
+                background: sess.id===activeSessionId ? 'var(--gold-glow)' : 'transparent', 
+                borderColor: sess.id===activeSessionId ? 'var(--gold)' : 'transparent',
+                animationDelay: `${Math.min(i * 0.03, 0.2)}s`,
+                transform: sess.id===activeSessionId ? 'scale(1.02)' : 'scale(1)'
               }}
-              onMouseEnter={() => setHoveredId(sess.id)} onMouseLeave={() => setHoveredId(null)}
+              onMouseEnter={(e) => {
+                if (sess.id !== activeSessionId) {
+                  e.currentTarget.style.background = 'var(--surface2)';
+                  e.currentTarget.style.borderColor = 'var(--border2)';
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (sess.id !== activeSessionId) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }
+              }}
               onClick={() => onSelectSession(sess.id)}>
               <div style={{ flex:1, minWidth:0 }}>
                 {editingId === sess.id ? (
                   <input
                     autoFocus
-                    style={{ width:'100%', background:'var(--surface2)', border:'1px solid var(--gold)', borderRadius:'8px', color:'var(--text)', fontSize:'13px', padding:'4px 8px', outline:'none' }}
+                    aria-label="Rename session"
+                    style={{ width:'100%', background:'var(--bg)', border:'1px solid var(--gold)', borderRadius:'10px', color:'var(--text)', fontSize:'14px', padding:'6px 10px', outline:'none', boxShadow: '0 0 15px var(--gold-glow)' }}
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
                     onKeyDown={e => {
@@ -305,28 +322,28 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
                   />
                 ) : (
                   <>
-                    <div style={{ fontSize:'14px', color: sess.id===activeSessionId ? 'var(--gold)' : 'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight: sess.id===activeSessionId ? 600 : 400 }}>{sess.title}</div>
-                    <div style={{ fontSize:'11px', color:'var(--text3)', marginTop: '2px' }}>{formatDate(sess.updated_at)}</div>
+                    <div style={{ fontSize:'14px', color: sess.id===activeSessionId ? 'var(--text)' : 'var(--text2)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight: sess.id===activeSessionId ? 700 : 500, transition: 'color 0.3s' }}>{sess.title}</div>
+                    <div style={{ fontSize:'11px', color:'var(--text3)', marginTop: '4px', fontWeight: 600, opacity: 0.7 }}>{formatDate(sess.updated_at)}</div>
                   </>
                 )}
               </div>
-              {hoveredId === sess.id && editingId !== sess.id && (
-                <div style={{ display:'flex', gap:'6px', animation: 'fadeIn 0.2s ease' }}>
-                  <button title="Rename" style={{ background:'rgba(255,255,255,0.05)', border:'none', color:'var(--text3)', fontSize:'12px', width: '24px', height: '24px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { e.stopPropagation(); setEditingId(sess.id); setEditTitle(sess.title) }}>✎</button>
-                  <button title="Delete" style={{ background:'rgba(244,63,94,0.1)', border:'none', color:'var(--rust)', fontSize:'12px', width: '24px', height: '24px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { e.stopPropagation(); onDeleteSession(sess.id) }}>×</button>
+              {(hoveredId === sess.id || sess.id === activeSessionId) && editingId !== sess.id && (
+                <div style={{ display:'flex', gap:'8px', animation: 'fadeIn 0.3s var(--ease-out-expo)' }}>
+                  <button aria-label="Rename session" title="Rename" style={{ background:'var(--border)', border:'none', color:'var(--text2)', fontSize:'12px', width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onClick={e => { e.stopPropagation(); setEditingId(sess.id); setEditTitle(sess.title) }}>✎</button>
+                  <button aria-label="Delete session" title="Delete" style={{ background:'rgba(244,63,94,0.1)', border:'none', color:'var(--rust)', fontSize:'14px', width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onClick={e => { e.stopPropagation(); onDeleteSession(sess.id) }}>×</button>
                 </div>
               )}
-            </div>
+            </button>
           ))}
         </div>
-      </div>
+      </nav>
 
       <div style={{ padding:'20px 24px', borderTop:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', gap:'12px' }}>
-        <div style={{ width:'40px', height:'40px', background:'linear-gradient(135deg,var(--gold),var(--rust))', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:700, color:'var(--bg)', flexShrink:0, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>{initials}</div>
+        <div style={{ width:'40px', height:'40px', background:'linear-gradient(135deg,var(--gold),var(--rust))', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:700, color:'var(--bg)', flexShrink:0, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }} aria-hidden="true">{initials}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:'14px', color:'var(--text)', fontWeight: 600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{user?.name || 'Guest'}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--sage)', animation: 'pulse 2s infinite' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--sage)', animation: 'pulse 2s infinite' }} aria-hidden="true" />
             <span style={{ fontSize:'11px', color:'var(--sage)', fontWeight: 600 }}>Active Now</span>
           </div>
         </div>
@@ -343,8 +360,10 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition:'all 0.2s'
+              transition:'all 0.2s',
+              cursor: 'pointer'
             }} 
+            aria-label="Log out"
             title="Log out"
             onClick={onLogout}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(244,63,94,0.1)'; e.currentTarget.style.color = 'var(--rust)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)' }}
@@ -357,7 +376,6 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
       <div style={{ padding: isMobile ? '0 24px calc(16px + env(safe-area-inset-bottom, 0px))' : '0 24px 16px', fontSize: '10px', color: 'var(--text3)', opacity: 0.5, textAlign: 'center' }}>
         MIT Licensed • © 2026 Pathfinder
       </div>
-      </aside>
-
+    </aside>
   )
 }

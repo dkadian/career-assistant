@@ -103,23 +103,28 @@ async def get_career_paths(session_id: str, db = Depends(get_db)):
         session_row = await cur.fetchone()
         if not session_row:
             raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = dict(session_row)
 
-    async with db.execute("SELECT * FROM user_profiles WHERE session_id = ?", (session_id,)) as cur:
+    async with db.execute("SELECT * FROM user_profiles WHERE user_id = ?", (session['user_id'],)) as cur:
         profile_row = await cur.fetchone()
         if not profile_row:
             raise HTTPException(
                 status_code=400,
-                detail="No profile found for this session. Create a profile first via POST /sessions/{session_id}/profile",
+                detail="No profile found for this user. Create a profile first.",
             )
         profile = dict(profile_row)
 
+    # Parse JSON fields
+    skills = json.loads(profile.get('skills') or '[]')
+    interests = json.loads(profile.get('interests') or '[]')
+
     profile_summary = f"""
-Education: {profile.get('education_level', 'Not specified')}
-Field of study: {profile.get('field_of_study', 'Not specified')}
+Education: {profile.get('education', 'Not specified')}
 Current role: {profile.get('current_role', 'Not specified')}
 Years of experience: {profile.get('years_experience', 'Not specified')}
-Skills: {', '.join(p['skills'] or [])}
-Interests: {', '.join(p['interests'] or [])}
+Skills: {', '.join(skills)}
+Interests: {', '.join(interests)}
 Goals: {profile.get('career_goals', 'Not specified')}
 """
 
@@ -150,7 +155,7 @@ Provide 3 career path options.
     try:
         data = _safe_parse_json(raw)
         return CareerAdviceResponse(**data)
-    except (json.JSONDecodeError, KeyError, TypeType):
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
         raise HTTPException(status_code=500, detail=f"Unexpected AI response format: {raw[:300]}")
 
 

@@ -1,3 +1,5 @@
+# MIT License • Copyright (c) 2026 Pathfinder
+
 import os
 import json
 from typing import List, Dict, Optional, AsyncGenerator
@@ -10,6 +12,7 @@ from accelerate import Accelerator
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct"
+MODEL = OPENROUTER_MODEL
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
 LM_STUDIO_MODEL = os.getenv("LM_STUDIO_MODEL", "careerboost-exaone")
@@ -51,66 +54,17 @@ Assistant: ## Data Science Skills... [In-scope: Advice provided]
 - Return clean GitHub-flavored markdown for in-scope answers.
 - Use short headings like `## Roadmap` or `## Next Steps`.
 - Use Mermaid syntax for diagrams: ```mermaid\ngraph TD\nA[Start] --> B[Step]```.
-- Keep formatting simple and consistent.
-"""
-
-REFUSAL_STRING = "it is out of context sorry i cant answer this"
-
-def post_process_response(content: str) -> str:
-    """Ensure that if the AI starts with a refusal, it only returns the refusal."""
-    cleaned = content.strip()
-    if cleaned.lower().startswith(REFUSAL_STRING.lower()):
-        return REFUSAL_STRING
-    return content
+- Keep formatting simple and consistent."""
 
 # Lazy load HF model
 accelerator = Accelerator()
 hf_pipeline = None
 
+
 def get_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
-openai_client = AsyncOpenAI(base_url=LM_STUDIO_URL, api_key="lm-studio") 
-
-FOLLOW_UP_MARKERS = (
-    "also", "and", "then", "next", "continue", "expand", "more detail",
-    "what about", "what else", "above", "previous", "earlier", "same",
-    "that", "this", "it", "those", "these",
-)
-
-
-def is_follow_up_query(text: str) -> bool:
-    query = " ".join((text or "").lower().split())
-    if not query:
-        return False
-    first_word = query.split(" ", 1)[0]
-    if first_word in FOLLOW_UP_MARKERS:
-        return True
-    return any(f" {marker} " in f" {query} " for marker in FOLLOW_UP_MARKERS[3:])
-
-
-def build_messages(
-    conversation_history: List[Dict[str, str]],
-    profile: Optional[Dict] = None,
-) -> List[Dict[str, str]]:
-    # Filter and clean history
-    clean_history = [
-        {"role": msg["role"], "content": msg["content"].strip()}
-        for msg in conversation_history
-        if msg.get("role") in {"user", "assistant"} and msg.get("content", "").strip()
-    ]
-    
-    # We want to keep the system prompt and a sliding window of the last 10 messages
-    # to maintain context without overwhelming the model or causing repetition bugs.
-    messages = [
-        {"role": "system", "content": build_system_prompt(profile)},
-    ]
-    
-    # Add the last 10 messages for context
-    messages.extend(clean_history[-10:])
-
-    return messages
-
+openai_client = AsyncOpenAI(base_url=LM_STUDIO_URL, api_key="lm-studio")
 
 def build_system_prompt(profile: Optional[Dict] = None) -> str:
     if not profile:
@@ -139,24 +93,43 @@ def build_system_prompt(profile: Optional[Dict] = None) -> str:
     ctx += "\n--- END PROFILE ---\nPersonalise your advice based on this profile."
     return ctx
 
-async def get_lm_studio_nonstream(
+async def get_lm_studio_response_stream(
+    conversation_history: List[Dict[str, str]],
+    profile: Optional[Dict] = None,
+) -> AsyncGenerator[str, None]:
+    system = build_system_prompt(profile)
+    messages = [{"role": "system", "content": system}]
+    for msg in conversation_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    response = await openai_client.chat.completions.create(
+        model=LM_STUDIO_MODEL,
+        messages=messages,
+        max_tokens=1024,
+        temperature=0.3,
+        stream=True,
+    )
+    async for chunk in response:
+        delta = chunk.choices[0].delta.content or ""
+        if delta:
+            yield delta
+
+async def get_lm_studio_response_nonstream(
     conversation_history: List[Dict[str, str]],
     profile: Optional[Dict] = None,
 ) -> str:
-    messages = build_messages(conversation_history, profile)
+    system = build_system_prompt(profile)
+    messages = [{"role": "system", "content": system}]
+    for msg in conversation_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
 
-    try:
-        response = await openai_client.chat.completions.create(
-            model=LM_STUDIO_MODEL,
-            messages=messages,
-            max_tokens=1024,
-            temperature=0.3,
-        )
-        content = response.choices[0].message.content.strip()
-        return post_process_response(content)
-    except Exception as e:
-        print(f"LM STUDIO NON-STREAM REQUEST FAILED: {e}")
-        raise
+    response = await openai_client.chat.completions.create(
+        model=LM_STUDIO_MODEL,
+        messages=messages,
+        max_tokens=1024,
+        temperature=0.3,
+    )
+    return response.choices[0].message.content.strip()
 
 async def get_ai_nonstream(
     conversation_history: List[Dict[str, str]],
@@ -165,11 +138,10 @@ async def get_ai_nonstream(
 ) -> str:
     if use_lm_studio:
         try:
-            return await get_lm_studio_nonstream(conversation_history, profile)
+            return await get_lm_studio_response_nonstream(conversation_history, profile)
         except Exception as e:
-            print(f"LM STUDIO NON-STREAM FAILED: {e}")
-            print(f"LM_STUDIO_URL: {LM_STUDIO_URL}, MODEL: {LM_STUDIO_MODEL}")
-            pass
+            print(f"LM Studio error: {e}")
+            print("Falling back to OpenRouter.")
     
     api_key = get_openrouter_api_key()
     if not api_key:
@@ -182,7 +154,10 @@ async def get_ai_nonstream(
         "X-Title": "Career Counselling AI",
     }
 
-    messages = build_messages(conversation_history, profile)
+    system = build_system_prompt(profile)
+    messages = [{"role": "system", "content": system}]
+    for msg in conversation_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
 
     payload = {
         "model": OPENROUTER_MODEL,
@@ -195,8 +170,7 @@ async def get_ai_nonstream(
     async with httpx.AsyncClient(timeout=timeout) as client:
         resp = await client.post(OPENROUTER_URL, json=payload, headers=headers)
         resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"].strip()
-        return post_process_response(content)
+        return resp.json()["choices"][0]["message"]["content"].strip()
 
 async def get_ai_response(
     conversation_history: List[Dict[str, str]],
@@ -204,59 +178,36 @@ async def get_ai_response(
     use_hf: bool = False,
     use_lm_studio: bool = False,
     stream: bool = False,
-) -> AsyncGenerator[str, None]:
-    if not stream:
-        result = await get_ai_nonstream(conversation_history, profile, use_lm_studio)
-        yield result
-        return
-
-    # Buffer for refusal detection
-    buffer = ""
-    refusal_detected = False
-
-    async def process_chunk(chunk: str) -> AsyncGenerator[str, None]:
-        nonlocal buffer, refusal_detected
-        if refusal_detected:
-            return
-
-        buffer += chunk
-        # If the buffer is still potentially a refusal
-        if len(buffer.strip()) < len(REFUSAL_STRING):
-            # If what we have so far doesn't match the start of the refusal string, flush it
-            if buffer.strip() and not REFUSAL_STRING.lower().startswith(buffer.strip().lower()):
-                yield buffer
-                buffer = ""
-        else:
-            # Buffer is long enough to check for refusal
-            if buffer.strip().lower().startswith(REFUSAL_STRING.lower()):
-                refusal_detected = True
-                yield REFUSAL_STRING
+) -> AsyncGenerator[str, None] | str:
+    if use_lm_studio:
+        try:
+            if stream:
+                async for chunk in get_lm_studio_response_stream(conversation_history, profile):
+                    yield chunk
+                return
             else:
-                yield buffer
-                buffer = ""
+                return await get_lm_studio_response_nonstream(conversation_history, profile)
+        except Exception as e:
+            print(f"LM Studio error: {e}")
+            print("Falling back.")
 
-    try:
-        if use_lm_studio:
-            messages = build_messages(conversation_history, profile)
-            response = await openai_client.chat.completions.create(
-                model=LM_STUDIO_MODEL,
-                messages=messages,
-                max_tokens=1024,
-                temperature=0.3,
-                stream=True,
-            )
-            async for chunk in response:
-                delta = chunk.choices[0].delta.content or ""
-                if delta:
-                    async for p in process_chunk(delta):
-                        yield p
-                if refusal_detected:
-                    break
-            if buffer and not refusal_detected:
-                yield buffer
-            return
+    if use_hf:
+        try:
+            pipe = await load_hf_model()
+            system = build_system_prompt(profile)
+            full_prompt = system + "\nHuman: " + conversation_history[-1]["content"]
+            input_text = f"career guidance: {full_prompt}"
+            result = pipe(input_text, max_new_tokens=256, min_length=50)[0]['generated_text']
+            result = result.replace(input_text, "").strip()
+            if stream:
+                yield result
+            else:
+                return result
+        except Exception as e:
+            print(f"HF error: {e}")
+            print("Falling back.")
 
-        # OpenRouter fallback
+    if stream:
         api_key = get_openrouter_api_key()
         if not api_key:
             yield "Error: OPENROUTER_API_KEY not set."
@@ -268,7 +219,12 @@ async def get_ai_response(
             "HTTP-Referer": "http://localhost:8000",
             "X-Title": "Career Counselling AI",
         }
-        messages = build_messages(conversation_history, profile)
+
+        system = build_system_prompt(profile)
+        messages = [{"role": "system", "content": system}]
+        for msg in conversation_history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
         payload = {
             "model": OPENROUTER_MODEL,
             "messages": messages,
@@ -276,33 +232,45 @@ async def get_ai_response(
             "temperature": 0.3,
             "stream": True,
         }
+
         timeout = Timeout(10.0, read=300.0, write=10.0, connect=10.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
-            async with client.stream("POST", OPENROUTER_URL, json=payload, headers=headers) as resp:
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]":
-                            break
-                        try:
-                            chunk_json = json.loads(data)
-                            delta = chunk_json["choices"][0]["delta"].get("content", "") or ""
-                            if delta:
-                                async for p in process_chunk(delta):
-                                    yield p
-                            if refusal_detected:
+            try:
+                async with client.stream("POST", OPENROUTER_URL, json=payload, headers=headers) as resp:
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if line.startswith("data: "):
+                            data = line[6:]
+                            if data == "[DONE]":
                                 break
-                        except:
-                            pass
-                if buffer and not refusal_detected:
-                    yield buffer
-    except Exception as e:
-        yield f"Error: {str(e)}"
+                            chunk = data.strip()
+                            if chunk:
+                                try:
+                                    delta = json.loads(chunk)["choices"][0]["delta"]["content"] or ""
+                                    if delta:
+                                        yield delta
+                                except (KeyError, json.JSONDecodeError):
+                                    pass
+            except httpx.TimeoutException:
+                yield "\n\nSorry, the AI response timed out."
+            except Exception as e:
+                yield f"\n\nError: {str(e)}"
+    else:
+        return await get_ai_nonstream(conversation_history, profile, use_lm_studio)
+
+async def load_hf_model():
+    global hf_pipeline
+    if hf_pipeline is None:
+        print("Loading HF model...")
+        tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
+        model = AutoModelForSeq2SeqLM.from_pretrained(HF_MODEL)
+        model, tokenizer = accelerator.prepare(model, tokenizer)
+        hf_pipeline = pipeline("text2text-generation", model=model, tokenizer=tokenizer, device=accelerator.device, max_length=512, do_sample=False)
+        print("HF model loaded.")
+    return hf_pipeline
 
 async def get_career_advice_ai(prompt: str, use_lm_studio: bool = False) -> str:
     gen = get_ai_response([{"role": "user", "content": prompt}], stream=False, use_lm_studio=use_lm_studio)
-    result = ""
     async for chunk in gen:
-        result += chunk
-    return result
+        return chunk
+

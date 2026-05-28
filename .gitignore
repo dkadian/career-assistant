@@ -7,5 +7,5 @@ venv/
 *.sqlite
 .DS_Store
 node_modules/
-career-frontend/node_modules/
-career-frontend/dist/
+frontend/node_modules/
+frontend/dist/

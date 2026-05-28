@@ -106,10 +106,19 @@ const markdownComponents = {
   td: ({ children }) => <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: '13px' }}>{children}</td>,
 }
 
+const SUGGESTIONS = [
+  { icon: '🚀', text: 'How do I start a career in AI?', title: 'Career Path' },
+  { icon: '📄', text: 'Review my resume and suggest fixes.', title: 'Resume Help' },
+  { icon: '💼', text: 'Prepare me for a Senior Role interview.', title: 'Interview' },
+  { icon: '🛠️', text: 'What skills are most in-demand today?', title: 'Skill Analysis' }
+]
+
 function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onRenameSession, onToggleSidebar }) {
   const [input, setInput] = useState(''), [isTyping, setIsTyping] = useState(false), [refreshKey, setRefreshKey] = useState(0)
   const lastAsstRef = useRef(null), abortControllerRef = useRef(null), [selectedModel, setSelectedModel] = useState('off'), endRef = useRef(null), taRef = useRef(null)
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2), [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+  const [copiedId, setCopiedId] = useState(null)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024)
@@ -119,15 +128,31 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
   const isModelActive = selectedModel !== 'off', modelColor = selectedModel === 'openrouter' ? 'var(--gold)' : selectedModel === 'lmstudio' ? 'var(--rust)' : 'var(--text3)', modelGlow = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.15)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.15)' : 'transparent', modelBg = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.1)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.02)', modelBorder = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.3)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.3)' : 'rgba(255,255,255,0.05)'
 
   useEffect(() => { return () => { if (abortControllerRef.current) abortControllerRef.current.abort() } }, [session?.id])
+  
+  const scrollToBottom = (behavior = 'smooth') => {
+    endRef.current?.scrollIntoView({ behavior })
+  }
+
   useEffect(() => { 
-    const container = endRef.current?.parentElement
-    if (container && container.scrollHeight - container.scrollTop - container.clientHeight < 150) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    if (isTyping) {
+      scrollToBottom('smooth')
     }
   }, [messages, isTyping])
 
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+    setShowScrollToBottom(!isAtBottom)
+  }
+
   function stopGeneration() { if (abortControllerRef.current) { abortControllerRef.current.abort(); setIsTyping(false) } }
   function resize() { const t = taRef.current; if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px' }
+
+  const handleCopy = (id, text) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   async function send(text) {
     const msg = (text || input).trim()
@@ -174,7 +199,7 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
       <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, background: 'radial-gradient(circle at top right, var(--gold-glow), transparent 40%), radial-gradient(circle at bottom left, rgba(244,63,94,0.03), transparent 40%)', pointerEvents: 'none', opacity: 0.5, zIndex: 0 }}></div>
       <div className="glass-morphism" style={{ padding: isMobile ? 'calc(12px + env(safe-area-inset-top, 0px)) 16px 12px' : '20px 32px', borderBottom:'1px solid rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, zIndex: 10, gap: '12px', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '16px', minWidth: 0, flex: 1 }}>
-          {isMobile && <button onClick={onToggleSidebar} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', fontSize: '20px', width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>☰</button>}
+          {isMobile && <button onClick={onToggleSidebar} aria-label="Toggle Sidebar" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', fontSize: '20px', width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>☰</button>}
           <div style={{ width: isMobile ? '36px' : '44px', height: isMobile ? '36px' : '44px', borderRadius: '12px', background: modelBg, border: `1px solid ${modelBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.5s', boxShadow: isModelActive ? `0 0 20px ${modelGlow}` : 'none', animation: isModelActive ? 'float 4s ease-in-out infinite' : 'none', flexShrink: 0 }}>
             <div style={{ width: isMobile ? '20px' : '24px', height: isMobile ? '20px' : '24px', position: 'relative', opacity: isModelActive ? 1 : 0.4 }}>
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -198,12 +223,15 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         <div style={{ display:'flex', alignItems:'center', gap:'12px', flexShrink: 0 }}>
           <div className="glass-morphism" style={{ display:'flex', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '2px', gap: '2px', border: '1px solid rgba(255,255,255,0.05)' }}>
             {[{value:'off',label:'Off',color:'var(--text3)'},{value:'openrouter',label:'Cloud',color:'var(--gold)'},{value:'lmstudio',label:'Local',color:'var(--rust)'}].map((opt) => (
-              <button key={opt.value} style={{ padding: isMobile ? '6px 8px' : '8px 14px', background: selectedModel === opt.value ? (opt.value === 'off' ? 'rgba(255,255,255,0.05)' : opt.color + '20') : 'transparent', border: 'none', color: selectedModel === opt.value ? opt.color : 'var(--text3)', borderRadius: '10px', fontSize: isMobile ? '9px' : '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '0.5px' }} onClick={() => setSelectedModel(opt.value)}>{opt.label}</button>
+              <button key={opt.value} aria-pressed={selectedModel === opt.value} style={{ padding: isMobile ? '6px 8px' : '8px 14px', background: selectedModel === opt.value ? (opt.value === 'off' ? 'rgba(255,255,255,0.05)' : opt.color + '20') : 'transparent', border: 'none', color: selectedModel === opt.value ? opt.color : 'var(--text3)', borderRadius: '10px', fontSize: isMobile ? '9px' : '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '0.5px' }} onClick={() => setSelectedModel(opt.value)}>{opt.label}</button>
             ))}
           </div>
         </div>
       </div>
-      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding: isMobile ? '20px 16px' : '32px', display:'flex', flexDirection:'column', gap: isMobile ? '16px' : '24px', position: 'relative', zIndex: 1 }}>
+      <div 
+        onScroll={handleScroll}
+        style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding: isMobile ? '20px 16px' : '32px', display:'flex', flexDirection:'column', gap: isMobile ? '16px' : '24px', position: 'relative', zIndex: 1 }}
+      >
         {!session || messages.length === 0 ? 
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding: isMobile ? '20px' : '40px 20px', animation:'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
             <div style={{ width: isMobile ? '100px' : '120px', height: isMobile ? '100px' : '120px', position: 'relative', marginBottom: isMobile ? '24px' : '40px', animation: 'float 5s ease-in-out infinite' }}>
@@ -220,44 +248,163 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
               </div>
             </div>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:700, color:'var(--text)', lineHeight:1.1, marginBottom:'16px' }}>Ready to shape your future?</h2>
+            
+            {/* Quick Suggestions */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', maxWidth: '600px', width: '100%', marginTop: '20px' }}>
+              {SUGGESTIONS.map((s, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => send(s.text)}
+                  disabled={!session || selectedModel === 'off'}
+                  className="glass-morphism"
+                  style={{ 
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    background: 'rgba(255,255,255,0.02)', 
+                    border: '1px solid rgba(255,255,255,0.05)', 
+                    textAlign: 'left', 
+                    cursor: (!session || selectedModel === 'off') ? 'default' : 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    opacity: (!session || selectedModel === 'off') ? 0.5 : 1
+                  }}
+                  onMouseEnter={e => {
+                    if (session && selectedModel !== 'off') {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                      e.currentTarget.style.borderColor = 'var(--gold)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (session && selectedModel !== 'off') {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>{s.icon}</span>
+                  <div>
+                    <div style={{ fontSize: '10px', color: 'var(--gold)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{s.title}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text2)', fontWeight: 500 }}>{s.text}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         : 
           <>
             {messages.map((msg, i) => (
-              <div key={msg.id||i} style={{ display:'flex', gap:'16px', alignItems:'flex-start', justifyContent: msg.role==='user' ? 'flex-end' : 'flex-start', animation:'fadeUp 0.5s both' }}>
+              <div 
+                key={msg.id||i} 
+                className="message-entrance"
+                style={{ 
+                  display:'flex', 
+                  gap:'16px', 
+                  alignItems:'flex-start', 
+                  justifyContent: msg.role==='user' ? 'flex-end' : 'flex-start',
+                  animationDelay: `${Math.min(i * 0.05, 0.3)}s` 
+                }}
+              >
                 {msg.role==='assistant' && (
-                  <div className="premium-gradient" style={{ width:'36px', height:'36px', borderRadius:'12px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--bg)', boxShadow: '0 4px 12px rgba(99,102,241,0.2)', marginTop: '4px', transition: 'transform 0.3s' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="15" x2="8" y2="15.01" /><line x1="16" y1="15" x2="16" y2="15.01" /></svg>
+                  <div className="premium-gradient" style={{ width:'40px', height:'40px', borderRadius:'14px', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--bg)', boxShadow: '0 8px 20px rgba(99,102,241,0.2)', marginTop: '4px', transition: 'all 0.4s var(--ease-out-expo)' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="15" x2="8" y2="15.01" /><line x1="16" y1="15" x2="16" y2="15.01" /></svg>
                   </div>
                 )}
-                <div style={{ display:'flex', flexDirection:'column', gap:'6px', maxWidth:'80%' }}>
-                  <div className="message-bubble" style={{ padding:'16px 20px', borderRadius:'20px', fontSize:'15px', lineHeight:1.7, position: 'relative', overflowWrap: 'anywhere', wordBreak: 'break-word', transition: 'all 0.3s', ...(msg.role==='user' ? { borderBottomRightRadius:'4px', background:'linear-gradient(135deg, var(--gold), var(--gold-dim))', color:'var(--bg)', fontWeight: 500, boxShadow: '0 10px 25px rgba(99,102,241,0.15)' } : { borderBottomLeftRadius:'4px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--text)', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }) }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:'8px', maxWidth:'80%', position: 'relative' }}>
+                  <div className="message-bubble" style={{ padding:'18px 24px', borderRadius:'24px', fontSize:'16px', lineHeight:1.7, position: 'relative', overflowWrap: 'anywhere', wordBreak: 'break-word', transition: 'all 0.4s var(--ease-out-expo)', ...(msg.role==='user' ? { borderBottomRightRadius:'4px', background:'linear-gradient(135deg, var(--gold), var(--gold-dim))', color:'#fff', fontWeight: 500, boxShadow: '0 12px 30px rgba(99,102,241,0.2)' } : { borderBottomLeftRadius:'4px', background:'var(--surface)', border:'1px solid var(--border)', color:'var(--text)', backdropFilter: 'blur(10px)', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }) }}>
                     {msg.role==='assistant' ? (
-                      isTyping && msg.id === lastAsstRef.current && (selectedModel === 'openrouter' || selectedModel === 'lmstudio') ? (
-                        <div key={'raw-' + msg.id} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'inherit', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                          {msg.content}<span style={{ display: 'inline-block', width: '2px', height: '15px', background: 'var(--gold)', marginLeft: '2px', verticalAlign: 'middle', animation: 'pulse 0.8s infinite' }} />
-                        </div>
-                      ) : (
-                        <ReactMarkdown key={'md-' + msg.id + msg.content.slice(-10)} remarkPlugins={[remarkGfm]} components={markdownComponents}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
-                      )
+                      <>
+                        {isTyping && msg.id === lastAsstRef.current && (selectedModel === 'openrouter' || selectedModel === 'lmstudio') ? (
+                          <div key={'raw-' + msg.id} style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'inherit', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                            {msg.content}<span style={{ display: 'inline-block', width: '3px', height: '18px', background: 'var(--gold)', marginLeft: '4px', verticalAlign: 'middle', animation: 'pulse 0.8s infinite' }} />
+                          </div>
+                        ) : (
+                          <ReactMarkdown key={'md-' + msg.id + msg.content.slice(-10)} remarkPlugins={[remarkGfm]} components={markdownComponents}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
+                        )}
+                        {/* Copy Button */}
+                        <button 
+                          onClick={() => handleCopy(msg.id, msg.content)}
+                          aria-label="Copy Response"
+                          style={{ 
+                            position: 'absolute', 
+                            top: '12px', 
+                            right: '12px', 
+                            background: 'rgba(255,255,255,0.08)', 
+                            border: '1px solid rgba(255,255,255,0.1)', 
+                            borderRadius: '10px', 
+                            color: copiedId === msg.id ? 'var(--sage)' : 'var(--text3)', 
+                            fontSize: '11px', 
+                            padding: '6px 12px', 
+                            cursor: 'pointer',
+                            opacity: 0,
+                            transform: 'translateY(-4px)',
+                            transition: 'all 0.3s var(--ease-out-expo)'
+                          }}
+                          className="copy-btn"
+                        >
+                          {copiedId === msg.id ? '✓ Copied' : 'Copy'}
+                        </button>
+                      </>
                     ) : msg.content}
                   </div>
-                  <div style={{ fontSize:'10px', color:'var(--text3)', padding:'0 8px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: msg.role==='user' ? 'right' : 'left' }}>{new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                  <div style={{ fontSize:'10px', color:'var(--text3)', padding:'0 12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', textAlign: msg.role==='user' ? 'right' : 'left', opacity: 0.8 }}>{new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
                 </div>
-                {msg.role==='user' && <div style={{ width:'36px', height:'36px', borderRadius:'12px', flexShrink:0, background:'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:700, color:'var(--gold)', marginTop: '4px' }}>{initials}</div>}
+                {msg.role==='user' && <div style={{ width:'40px', height:'40px', borderRadius:'14px', flexShrink:0, background:'var(--surface2)', border: '1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:800, color:'var(--gold)', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.4s var(--ease-out-expo)' }}>{initials}</div>}
               </div>
             ))}
           </>
         }
         <div ref={endRef} />
       </div>
+      
+      {/* Scroll to bottom button */}
+      {showScrollToBottom && (
+        <button 
+          onClick={() => scrollToBottom()}
+          aria-label="Scroll to bottom"
+          style={{ 
+            position: 'absolute', 
+            bottom: '100px', 
+            right: '24px', 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '50%', 
+            background: 'var(--surface)', 
+            border: '1px solid var(--border)', 
+            color: 'var(--gold)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            cursor: 'pointer', 
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            zIndex: 20,
+            animation: 'fadeUp 0.3s ease'
+          }}
+        >
+          ↓
+        </button>
+      )}
+
       <div style={{ padding: isMobile ? '16px 16px calc(16px + env(safe-area-inset-bottom, 0px))' : '24px 32px 32px', borderTop:'1px solid var(--border)', flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'flex-end', gap: isMobile ? '8px' : '12px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'18px', padding: isMobile ? '6px 10px' : '10px 14px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', transition: 'all 0.3s', position: 'relative' }}>
-          <textarea ref={taRef} style={{ flex:1, border:'none', outline:'none', background:'transparent', color:'var(--text)', fontSize:'15px', lineHeight:1.6, resize:'none', minHeight:'24px', maxHeight:'140px', padding: '6px 4px', scrollbarWidth: 'none' }} placeholder={selectedModel === 'off' ? 'Choose a model above to begin...' : (session ? 'Describe your career challenge...' : 'Start a new session to chat...')} value={input} onChange={e => { setInput(e.target.value); resize() }} onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); if (!isTyping) send() } }} disabled={!session || selectedModel === 'off'} rows={1} />
+          <textarea 
+            ref={taRef} 
+            aria-label="Message Input"
+            style={{ flex:1, border:'none', outline:'none', background:'transparent', color:'var(--text)', fontSize:'15px', lineHeight:1.6, resize:'none', minHeight:'24px', maxHeight:'140px', padding: '6px 4px', scrollbarWidth: 'none' }} 
+            placeholder={selectedModel === 'off' ? 'Choose a model above to begin...' : (session ? 'Describe your career challenge...' : 'Start a new session to chat...')} 
+            value={input} 
+            onChange={e => { setInput(e.target.value); resize() }} 
+            onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); if (!isTyping) send() } }} 
+            disabled={!session || selectedModel === 'off'} 
+            rows={1} 
+          />
           {isTyping ? (
-            <button style={{ width:'40px', height:'40px', flexShrink:0, border:'1px solid var(--rust)', borderRadius:'14px', color:'var(--rust)', background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition: 'all 0.3s', cursor: 'pointer' }} onClick={stopGeneration}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+            <button aria-label="Stop Generation" style={{ width:'40px', height:'40px', flexShrink:0, border:'1px solid var(--rust)', borderRadius:'14px', color:'var(--rust)', background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', transition: 'all 0.3s', cursor: 'pointer' }} onClick={stopGeneration}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
           ) : (
-            <button className="premium-gradient" style={{ width:'40px', height:'40px', flexShrink:0, border:'none', borderRadius:'14px', color:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: '0 5px 15px rgba(99,102,241,0.2)', transition: 'all 0.3s', opacity: (!input.trim()||isTyping||!session||selectedModel === 'off')?0.4:1, cursor: (!input.trim()||isTyping||!session||selectedModel === 'off')?'default':'pointer' }} onClick={() => send()} disabled={!input.trim()||isTyping||!session||selectedModel === 'off'}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+            <button className="premium-gradient" aria-label="Send Message" style={{ width:'40px', height:'40px', flexShrink:0, border:'none', borderRadius:'14px', color:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: '0 5px 15px rgba(99,102,241,0.2)', transition: 'all 0.3s', opacity: (!input.trim()||isTyping||!session||selectedModel === 'off')?0.4:1, cursor: (!input.trim()||isTyping||!session||selectedModel === 'off')?'default':'pointer' }} onClick={() => send()} disabled={!input.trim()||isTyping||!session||selectedModel === 'off'}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
           )}
         </div>
         <div style={{ fontSize:'11px', color:'var(--text3)', textAlign:'center', marginTop:'12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>Shift + Enter for new line • Personalised by your profile • MIT Licensed</div>
