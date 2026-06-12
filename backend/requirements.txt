@@ -17,3 +17,4 @@ torch
 accelerate
 passlib[bcrypt]
 bcrypt
+cryptography

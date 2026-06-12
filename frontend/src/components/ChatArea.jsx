@@ -113,9 +113,13 @@ const SUGGESTIONS = [
   { icon: '🛠️', text: 'What skills are most in-demand today?', title: 'Skill Analysis' }
 ]
 
-function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onRenameSession, onToggleSidebar }) {
+function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onRenameSession, onToggleSidebar, onEditApiKey, selectedModel, setSelectedModel }) {
   const [input, setInput] = useState(''), [isTyping, setIsTyping] = useState(false), [refreshKey, setRefreshKey] = useState(0)
-  const lastAsstRef = useRef(null), abortControllerRef = useRef(null), [selectedModel, setSelectedModel] = useState('off'), endRef = useRef(null), taRef = useRef(null)
+  const [reasoningSteps, setReasoningSteps] = useState([])
+  const [currentReasoningStatus, setCurrentReasoningStatus] = useState(null)
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false)
+  const lastAsstRef = useRef(null)
+, abortControllerRef = useRef(null), endRef = useRef(null), taRef = useRef(null)
   const initials = (user?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2), [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
@@ -125,7 +129,15 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
     window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const isModelActive = selectedModel !== 'off', modelColor = selectedModel === 'openrouter' ? 'var(--gold)' : selectedModel === 'lmstudio' ? 'var(--rust)' : 'var(--text3)', modelGlow = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.15)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.15)' : 'transparent', modelBg = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.1)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.02)', modelBorder = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.3)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.3)' : 'rgba(255,255,255,0.05)'
+  const isModelActive = selectedModel !== 'off', modelColor = selectedModel === 'openrouter' ? 'var(--gold)' : selectedModel === 'lmstudio' ? 'var(--rust)' : selectedModel === 'foundry' ? '#6366f1' : 'var(--text3)', modelGlow = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.15)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.15)' : selectedModel === 'foundry' ? 'rgba(99,102,241,0.25)' : 'transparent', modelBg = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.1)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.1)' : selectedModel === 'foundry' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.02)', modelBorder = selectedModel === 'openrouter' ? 'rgba(99,102,241,0.3)' : selectedModel === 'lmstudio' ? 'rgba(244,63,94,0.3)' : selectedModel === 'foundry' ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.05)'
+
+  useEffect(() => {
+    if ((selectedModel === 'openrouter' || selectedModel === 'foundry') && !user?.has_api_key) {
+      setShowApiKeyPrompt(true)
+    } else {
+      setShowApiKeyPrompt(false)
+    }
+  }, [selectedModel, user?.has_api_key])
 
   useEffect(() => { return () => { if (abortControllerRef.current) abortControllerRef.current.abort() } }, [session?.id])
   
@@ -162,27 +174,68 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
     setMessages(prev => [...prev, userMsg]); setIsTyping(true)
     const abortController = new AbortController(); abortControllerRef.current = abortController
     try {
-      const useHf = false, useLm = selectedModel === 'lmstudio'
-      const streamRes = await api.sendMessage(session.id, user.id, msg, true, useHf, useLm, abortController.signal)
-      const asstMsg = { role:'assistant', content:'', created_at: new Date().toISOString(), id:'tmp-asst-'+Date.now() }
-      setMessages(prev => [...prev, asstMsg]); lastAsstRef.current = asstMsg.id
-      const reader = streamRes.body.getReader(), decoder = new TextDecoder()
-      let fullReply = '', buffer = ''
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          buffer += decoder.decode(value || new Uint8Array(), {stream: !done})
-          const lines = buffer.split('\n'); buffer = lines.pop() || ''
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6); if (data === '[DONE]') break
-              let delta = data; try { const parsed = JSON.parse(data); if (typeof parsed === 'string') delta = parsed } catch (e) { if (data === '') delta = '\n' }
-              if (delta !== '') { fullReply += delta; setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m)) }
+      if (selectedModel === 'foundry') {
+        const streamRes = await api.sendFoundryReasoning(session.id, user.id, msg, abortController.signal)
+        const asstMsg = { role:'assistant', content:'', created_at: new Date().toISOString(), id:'tmp-asst-'+Date.now() }
+        setMessages(prev => [...prev, asstMsg]); lastAsstRef.current = asstMsg.id
+        setReasoningSteps([])
+        
+        const reader = streamRes.body.getReader(), decoder = new TextDecoder()
+        let fullReply = '', buffer = ''
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            buffer += decoder.decode(value || new Uint8Array(), {stream: !done})
+            const lines = buffer.split('\n'); buffer = lines.pop() || ''
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6); if (data === '[DONE]') break
+                try {
+                  const parsed = JSON.parse(data)
+                  if (parsed.status === 'completed_step') {
+                    setReasoningSteps(prev => [...prev, parsed])
+                    setCurrentReasoningStatus(null)
+                  } else if (parsed.status) {
+                    setCurrentReasoningStatus(parsed)
+                  } else if (typeof parsed === 'string') {
+                    fullReply += parsed
+                    setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m))
+                  }
+                } catch (e) { 
+                  // Fallback for non-JSON or malformed chunks
+                  if (data !== '') {
+                    fullReply += data
+                    setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m))
+                  }
+                }
+              }
             }
+            if (done) break
           }
-          if (done) break
-        }
-      } finally { reader.releaseLock() }
+        } finally { reader.releaseLock(); setCurrentReasoningStatus(null) }
+      } else {
+        const useHf = false, useLm = selectedModel === 'lmstudio'
+        const streamRes = await api.sendMessage(session.id, user.id, msg, true, useHf, useLm, abortController.signal)
+        const asstMsg = { role:'assistant', content:'', created_at: new Date().toISOString(), id:'tmp-asst-'+Date.now() }
+        setMessages(prev => [...prev, asstMsg]); lastAsstRef.current = asstMsg.id
+        const reader = streamRes.body.getReader(), decoder = new TextDecoder()
+        let fullReply = '', buffer = ''
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            buffer += decoder.decode(value || new Uint8Array(), {stream: !done})
+            const lines = buffer.split('\n'); buffer = lines.pop() || ''
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6); if (data === '[DONE]') break
+                let delta = data; try { const parsed = JSON.parse(data); if (typeof parsed === 'string') delta = parsed } catch (e) { if (data === '') delta = '\n' }
+                if (delta !== '') { fullReply += delta; setMessages(prev => prev.map(m => m.id === asstMsg.id ? { ...m, content: fullReply } : m)) }
+              }
+            }
+            if (done) break
+          }
+        } finally { reader.releaseLock() }
+      }
     } catch(e) {
       if (e.name !== 'AbortError') setMessages(prev => prev.slice(0, -1).concat({ role:'assistant', content: 'Error: ' + e.message, created_at: new Date().toISOString(), id:'err-'+Date.now() }))
     } finally { 
@@ -222,7 +275,12 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px', flexShrink: 0 }}>
           <div className="glass-morphism" style={{ display:'flex', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '2px', gap: '2px', border: '1px solid rgba(255,255,255,0.05)' }}>
-            {[{value:'off',label:'Off',color:'var(--text3)'},{value:'openrouter',label:'Cloud',color:'var(--gold)'},{value:'lmstudio',label:'Local',color:'var(--rust)'}].map((opt) => (
+            {[
+              {value:'off',label:'Off',color:'var(--text3)'},
+              {value:'openrouter',label:'Cloud',color:'var(--gold)'},
+              {value:'lmstudio',label:'Local',color:'var(--rust)'},
+              {value:'foundry',label:'Reasoning',color:'#6366f1'}
+            ].map((opt) => (
               <button key={opt.value} aria-pressed={selectedModel === opt.value} style={{ padding: isMobile ? '6px 8px' : '8px 14px', background: selectedModel === opt.value ? (opt.value === 'off' ? 'rgba(255,255,255,0.05)' : opt.color + '20') : 'transparent', border: 'none', color: selectedModel === opt.value ? opt.color : 'var(--text3)', borderRadius: '10px', fontSize: isMobile ? '9px' : '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '0.5px' }} onClick={() => setSelectedModel(opt.value)}>{opt.label}</button>
             ))}
           </div>
@@ -232,6 +290,57 @@ function ChatArea({ user, session, messages, setMessages, onSessionsRefresh, onR
         onScroll={handleScroll}
         style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding: isMobile ? '20px 16px' : '32px', display:'flex', flexDirection:'column', gap: isMobile ? '16px' : '24px', position: 'relative', zIndex: 1 }}
       >
+        {showApiKeyPrompt && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 100, marginBottom: '16px', animation: 'fadeDown 0.4s ease-out' }}>
+            <div className="glass-morphism" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '16px 20px', borderRadius: '16px', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+              <div style={{ fontSize: '24px' }}>☁️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>API Key Required</div>
+                <div style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 500, lineHeight: 1.4 }}>
+                  To use {selectedModel === 'foundry' ? 'Reasoning' : 'Cloud'} mode, please provide your OpenRouter API key in <span onClick={onEditApiKey} style={{ color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Cloud Settings</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Reasoning Flow Visualization */}
+        {(reasoningSteps.length > 0 || currentReasoningStatus) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+            <div style={{ fontSize: '10px', color: '#6366f1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', marginLeft: '4px', opacity: 0.8 }}>
+              Reasoning Engine Activity
+            </div>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
+              {reasoningSteps.map((step, idx) => (
+                <div key={idx} className="glass-morphism" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '8px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.5s ease-out' }}>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10b981', color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900 }}>✓</div>
+                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, textTransform: 'uppercase' }}>{step.agent} Done</div>
+                </div>
+              ))}
+            </div>
+
+            {currentReasoningStatus && (
+              <div className="glass-morphism step-card-3d" style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '20px 24px', borderRadius: '20px', backdropFilter: 'blur(16px)', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div className="spin" style={{ width: '24px', height: '24px', border: '3px solid rgba(99, 102, 241, 0.1)', borderTopColor: '#6366f1', borderRadius: '50%' }}></div>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>⚡</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', color: '#6366f1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {currentReasoningStatus.status} {currentReasoningStatus.step ? `• Step ${currentReasoningStatus.step}` : ''}
+                    </div>
+                    <div style={{ fontSize: '15px', color: 'var(--text)', fontWeight: 600, marginTop: '2px' }}>
+                      {currentReasoningStatus.agent ? <span style={{ color: '#818cf8' }}>{currentReasoningStatus.agent} is </span> : ''}
+                      {currentReasoningStatus.message.toLowerCase()}...
+                    </div>
+                  </div>
+                </div>
+                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'linear-gradient(to bottom, #6366f1, #8b5cf6)', borderRadius: '20px 0 0 20px' }}></div>
+              </div>
+            )}
+          </div>
+        )}
         {!session || messages.length === 0 ? 
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding: isMobile ? '20px' : '40px 20px', animation:'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
             <div style={{ width: isMobile ? '100px' : '120px', height: isMobile ? '100px' : '120px', position: 'relative', marginBottom: isMobile ? '24px' : '40px', animation: 'float 5s ease-in-out infinite' }}>

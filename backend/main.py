@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
-from app.routes import profile, chat, sessions
+from app.routes import profile, chat, sessions, foundry
 from app.database import init_db
 from career import router as career_router
 
@@ -25,6 +25,7 @@ app.include_router(profile.router, prefix="/api/v1/profile")
 app.include_router(chat.router, prefix="/api/v1/chat")
 app.include_router(sessions.router, prefix="/api/v1/sessions")
 app.include_router(career_router, prefix="/api/v1/career")
+app.include_router(foundry.router, prefix="/api/v1/foundry")
 
 @app.on_event("startup")
 async def startup():

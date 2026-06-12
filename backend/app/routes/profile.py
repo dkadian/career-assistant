@@ -5,8 +5,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from aiosqlite import Connection
 
 from app.database import get_db
-from app.schemas.schemas import UserCreate, UserLogin, UserOut, ProfileUpsert, ProfileOut, UploadFile, File, ResumeUploadResponse
+from app.schemas.schemas import UserCreate, UserLogin, UserOut, ProfileUpsert, ProfileOut, UploadFile, File, ResumeUploadResponse, ApiKeyUpdate
 import bcrypt
+from app.utils import encrypt_data
 
 def get_password_hash(password):
     # Truncate to 72 bytes as per bcrypt specification
@@ -34,7 +35,7 @@ async def create_user(payload: UserCreate, db: Connection = Depends(get_db)):
     await db.execute("INSERT INTO users (id, name, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
         (user_id, payload.name, payload.email, hashed_password, now))
     await db.commit()
-    return UserOut(id=user_id, name=payload.name, email=payload.email,
+    return UserOut(id=user_id, name=payload.name, email=payload.email, has_api_key=False,
                    created_at=datetime.fromisoformat(now))
 
 @router.post("/login", response_model=UserOut)
@@ -48,6 +49,7 @@ async def login(payload: UserLogin, db: Connection = Depends(get_db)):
     if not verify_password(payload.password, user_data.get("password_hash")):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
+    user_data["has_api_key"] = bool(user_data.get("openrouter_api_key"))
     return UserOut(**user_data)
 
 @router.get("/users/{user_id}", response_model=UserOut)
@@ -56,7 +58,21 @@ async def get_user(user_id: str, db: Connection = Depends(get_db)):
         row = await cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="User not found.")
-    return UserOut(**dict(row))
+    user_data = dict(row)
+    user_data["has_api_key"] = bool(user_data.get("openrouter_api_key"))
+    return UserOut(**user_data)
+
+@router.put("/users/{user_id}/api-key")
+async def update_api_key(user_id: str, payload: ApiKeyUpdate, db: Connection = Depends(get_db)):
+    async with db.execute("SELECT id FROM users WHERE id = ?", (user_id,)) as cur:
+        user = await cur.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    encrypted_key = encrypt_data(payload.openrouter_api_key)
+    await db.execute("UPDATE users SET openrouter_api_key = ? WHERE id = ?", (encrypted_key, user_id))
+    await db.commit()
+    return {"message": "API key stored securely. This key is encrypted and used only for your cloud model requests."}
 
 @router.put("/users/{user_id}/profile", response_model=ProfileOut)
 async def upsert_profile(user_id: str, payload: ProfileUpsert, db: Connection = Depends(get_db)):
@@ -106,7 +122,9 @@ async def get_user_by_email(email: str, db: Connection = Depends(get_db)):
         row = await cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="User not found.")
-    return UserOut(**dict(row))
+    user_data = dict(row)
+    user_data["has_api_key"] = bool(user_data.get("openrouter_api_key"))
+    return UserOut(**user_data)
 
 import fitz  # PyMuPDF
 import io

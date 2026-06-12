@@ -11,6 +11,7 @@ from app.database import get_db, DB_PATH
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services.ai_service_fixed import get_ai_response
 import aiosqlite
+from app.utils import decrypt_data
 
 router = APIRouter()
 
@@ -29,12 +30,12 @@ def normalize_profile(row) -> dict | None:
                 pass
     return profile
 
-async def stream_generator(history: list[dict[str, str]], profile: dict, payload: ChatRequest, asst_msg_id: str, reply_at: str, use_hf: bool = False, use_lm: bool = False) -> AsyncGenerator[str, None]:
+async def stream_generator(history: list[dict[str, str]], profile: dict, payload: ChatRequest, asst_msg_id: str, reply_at: str, use_hf: bool = False, use_lm: bool = False, user_api_key: str = None) -> AsyncGenerator[str, None]:
     full_reply = ""
     chunk_count = 0
     
     try:
-        async for chunk in get_ai_response(history, profile, use_hf, use_lm, stream=True):
+        async for chunk in get_ai_response(history, profile, use_hf, use_lm, stream=True, user_api_key=user_api_key):
             if chunk:
                 full_reply += chunk
                 chunk_count += 1
@@ -96,6 +97,12 @@ async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
 
+    # Fetch user API key
+    async with db.execute("SELECT openrouter_api_key FROM users WHERE id = ?", (payload.user_id,)) as cur:
+        user_row = await cur.fetchone()
+        encrypted_key = user_row["openrouter_api_key"] if user_row else None
+        user_api_key = decrypt_data(encrypted_key) if encrypted_key else None
+
     async with db.execute(
         """SELECT up.*, u.name FROM user_profiles up
            JOIN users u ON u.id = up.user_id
@@ -130,10 +137,10 @@ async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf
     await db.commit()
 
     if stream:
-        return StreamingResponse(stream_generator(history, profile or {}, payload, asst_msg_id, reply_at, use_hf, use_lm), media_type="text/plain")
+        return StreamingResponse(stream_generator(history, profile or {}, payload, asst_msg_id, reply_at, use_hf, use_lm, user_api_key), media_type="text/plain")
     else:
         try:
-            gen = get_ai_response(history, profile, use_hf, use_lm)
+            gen = get_ai_response(history, profile, use_hf, use_lm, user_api_key=user_api_key)
             reply_text = ""
             async for chunk in gen:
                 reply_text += chunk

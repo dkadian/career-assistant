@@ -16,6 +16,7 @@ class UserOut(BaseModel):
     id: str
     name: str
     email: str
+    has_api_key: bool = False
     created_at: datetime
 
 class ProfileUpsert(BaseModel):
@@ -70,6 +71,9 @@ class ResumeUploadResponse(BaseModel):
     skills: List[str]
     interests: List[str]
     summary: str
+
+class ApiKeyUpdate(BaseModel):
+    openrouter_api_key: str
 
 # Added for career.py
 class ResumeReviewRequest(BaseModel):

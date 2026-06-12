@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from './api'
 import AuthPage from './components/AuthPage'
 import ProfileModal from './components/ProfileModal'
+import ApiKeyModal from './components/ApiKeyModal'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea.jsx'
 
@@ -12,6 +13,8 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null)
   const [messages, setMessages] = useState([])
   const [showProfile, setShowProfile] = useState(false)
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('off')
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') !== 'light')
@@ -27,11 +30,15 @@ export default function App() {
   useEffect(() => {
     const userId = localStorage.getItem('userId')
     const userName = localStorage.getItem('userName')
+    const userEmail = localStorage.getItem('userEmail')
     const savedSessionId = localStorage.getItem('activeSessionId')
     
     if (userId && userName) {
-      const u = { id: userId, name: userName }
-      setUser(u)
+      api.getUser(userId).then(fullUser => {
+        setUser(fullUser)
+      }).catch(() => {
+        setUser({ id: userId, name: userName })
+      })
       loadProfile(userId)
       loadSessions(userId).then(sessionsData => {
         if (savedSessionId && sessionsData) {
@@ -70,14 +77,17 @@ export default function App() {
   const refreshSessions = useCallback(() => {
     if (user) loadSessions(user.id)
   }, [user])
+
   async function loadProfile(userId) {
     try { const data = await api.getProfile(userId); setProfile(data) } catch (e) {}
   }
+
   async function handleAuth(userData) {
     setUser(userData)
     await Promise.all([loadSessions(userData.id), loadProfile(userData.id)])
     setShowProfile(true)
   }
+
   async function handleNewSession() {
     if (!user) return
     try {
@@ -89,6 +99,7 @@ export default function App() {
       localStorage.setItem('activeSessionId', session.id)
     } catch (e) {}
   }
+
   async function handleSelectSession(sessionId) {
     try {
       const session = await api.getSession(sessionId)
@@ -97,6 +108,7 @@ export default function App() {
       localStorage.setItem('activeSessionId', sessionId)
     } catch (e) {}
   }
+
   async function handleRenameSession(sessionId, newTitle) {
     try {
       const updated = await api.updateSession(sessionId, newTitle)
@@ -104,6 +116,7 @@ export default function App() {
       if (activeSession?.id === sessionId) setActiveSession(updated)
     } catch (e) {}
   }
+
   async function handleDeleteSession(sessionId) {
     try {
       await api.deleteSession(sessionId)
@@ -119,6 +132,7 @@ export default function App() {
   function handleLogout() {
     localStorage.removeItem('userId')
     localStorage.removeItem('userName')
+    localStorage.removeItem('userEmail')
     localStorage.removeItem('activeSessionId')
     setUser(null)
     setSessions([])
@@ -150,6 +164,7 @@ export default function App() {
       ) : (
         <>
           {showProfile && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
+          {showApiKey && <ApiKeyModal userId={user.id} onClose={() => setShowApiKey(false)} onSuccess={() => setUser({ ...user, has_api_key: true })} />}
           
           {/* Mobile Backdrop */}
           {sidebarOpen && (
@@ -177,6 +192,8 @@ export default function App() {
             onNewSession={handleNewSession} 
             onSelectSession={s => { handleSelectSession(s); setSidebarOpen(false); }}
             onEditProfile={() => setShowProfile(true)} 
+            onEditApiKey={() => setShowApiKey(true)}
+            highlightCloudSettings={(selectedModel === 'openrouter' || selectedModel === 'foundry') && !user?.has_api_key}
             onDeleteSession={handleDeleteSession}
             onRenameSession={handleRenameSession}
             onLogout={handleLogout}
@@ -189,6 +206,9 @@ export default function App() {
             session={activeSession} 
             messages={messages} 
             setMessages={setMessages}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            onEditApiKey={() => setShowApiKey(true)}
             onSessionsRefresh={refreshSessions} 
             onRenameSession={handleRenameSession}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}

@@ -150,6 +150,24 @@ textarea::-webkit-scrollbar { display: none; }
 @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* 3D Step Transitions */
+@keyframes stepEnter3D {
+  0% { 
+    opacity: 0; 
+    transform: perspective(1000px) rotateX(-20deg) translateY(30px) translateZ(-100px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: perspective(1000px) rotateX(0deg) translateY(0) translateZ(0); 
+  }
+}
+
+.step-card-3d {
+  animation: stepEnter3D 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
 /* Aggressive Mermaid Error Suppression */
 #mermaid-error-overlay, 
 .mermaid-error-icon,

@@ -119,6 +119,7 @@ export default function ProfileModal({ profile, userId, onSave, onClose }) {
               {step === 1 ? 'Start with your Resume' : step === 2 ? 'Skills & Expertise' : 'Future Goals'}
             </h2>
           </div>
+
           <button style={{ background: 'var(--surface2)', border: 'none', color: 'var(--text3)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', position: isMobile ? 'fixed' : 'relative', top: isMobile ? 'calc(12px + env(safe-area-inset-top, 0px))' : 'auto', right: isMobile ? '16px' : 'auto', zIndex: 110 }} onClick={onClose} onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}>×</button>
         </div>
 

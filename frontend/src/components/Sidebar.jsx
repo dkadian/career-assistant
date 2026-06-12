@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onDeleteSession, onRenameSession, onLogout, isOpen, onClose }) {
+export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onEditApiKey, highlightCloudSettings, onDeleteSession, onRenameSession, onLogout, isOpen, onClose }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
@@ -347,31 +347,64 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
             <span style={{ fontSize:'11px', color:'var(--sage)', fontWeight: 600 }}>Active Now</span>
           </div>
         </div>
-        {user && (
-          <button 
-            style={{ 
-              background:'rgba(255,255,255,0.03)', 
-              border:'1px solid rgba(255,255,255,0.08)', 
-              color:'var(--text2)', 
-              width: '32px',
-              height: '32px',
-              borderRadius:'10px', 
-              fontSize:'16px', 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition:'all 0.2s',
-              cursor: 'pointer'
-            }} 
-            aria-label="Log out"
-            title="Log out"
-            onClick={onLogout}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(244,63,94,0.1)'; e.currentTarget.style.color = 'var(--rust)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'var(--text2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
-          >
-            ⎋
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {user && (
+            <button 
+              style={{ 
+                background: highlightCloudSettings ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)', 
+                border: highlightCloudSettings ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)', 
+                color: highlightCloudSettings ? 'var(--gold)' : 'var(--text2)', 
+                width: '32px',
+                height: '32px',
+                borderRadius:'10px', 
+                fontSize:'16px', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition:'all 0.2s',
+                cursor: 'pointer',
+                animation: highlightCloudSettings ? 'pulse-gold 2s infinite' : 'none',
+                boxShadow: highlightCloudSettings ? '0 0 15px var(--gold-glow)' : 'none'
+              }} 
+              aria-label="Cloud Settings"
+              title="Cloud Settings"
+              onClick={onEditApiKey}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.borderColor = 'var(--gold)' }}
+              onMouseLeave={e => { 
+                e.currentTarget.style.background = highlightCloudSettings ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)'; 
+                e.currentTarget.style.color = highlightCloudSettings ? 'var(--gold)' : 'var(--text2)'; 
+                e.currentTarget.style.borderColor = highlightCloudSettings ? 'var(--gold)' : 'rgba(255,255,255,0.08)'; 
+              }}
+            >
+              ☁
+            </button>
+          )}
+          {user && (
+            <button 
+              style={{ 
+                background:'rgba(255,255,255,0.03)', 
+                border:'1px solid rgba(255,255,255,0.08)', 
+                color:'var(--text2)', 
+                width: '32px',
+                height: '32px',
+                borderRadius:'10px', 
+                fontSize:'16px', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition:'all 0.2s',
+                cursor: 'pointer'
+              }} 
+              aria-label="Log out"
+              title="Log out"
+              onClick={onLogout}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(244,63,94,0.1)'; e.currentTarget.style.color = 'var(--rust)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'var(--text2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+            >
+              ⎋
+            </button>
+          )}
+        </div>
       </div>
       <div style={{ padding: isMobile ? '0 24px calc(16px + env(safe-area-inset-bottom, 0px))' : '0 24px 16px', fontSize: '10px', color: 'var(--text3)', opacity: 0.5, textAlign: 'center' }}>
         MIT Licensed • © 2026 Pathfinder
