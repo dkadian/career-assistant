@@ -83,27 +83,47 @@ async def upsert_profile(user_id: str, payload: ProfileUpsert, db: Connection = 
     now = datetime.now(timezone.utc).isoformat()
     skills_json = json.dumps(payload.skills or [])
     interests_json = json.dumps(payload.interests or [])
+    courses_json = json.dumps(payload.preferred_courses or [])
+    locations_json = json.dumps(payload.preferred_locations or [])
+    exams_json = json.dumps(payload.entrance_exams or {})
+    
     await db.execute("""
         INSERT INTO user_profiles (user_id, current_role, years_experience, education,
-                                   skills, interests, career_goals, location, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   skills, interests, career_goals, location, 
+                                   preferred_courses, preferred_locations, max_budget,
+                                   entrance_exams, preferred_college_type, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
-            current_role = excluded.current_role,
-            years_experience = excluded.years_experience,
-            education = excluded.education,
-            skills = excluded.skills,
-            interests = excluded.interests,
-            career_goals = excluded.career_goals,
-            location = excluded.location,
+            current_role = COALESCE(excluded.current_role, current_role),
+            years_experience = COALESCE(excluded.years_experience, years_experience),
+            education = COALESCE(excluded.education, education),
+            skills = COALESCE(excluded.skills, skills),
+            interests = COALESCE(excluded.interests, interests),
+            career_goals = COALESCE(excluded.career_goals, career_goals),
+            location = COALESCE(excluded.location, location),
+            preferred_courses = COALESCE(excluded.preferred_courses, preferred_courses),
+            preferred_locations = COALESCE(excluded.preferred_locations, preferred_locations),
+            max_budget = COALESCE(excluded.max_budget, max_budget),
+            entrance_exams = COALESCE(excluded.entrance_exams, entrance_exams),
+            preferred_college_type = COALESCE(excluded.preferred_college_type, preferred_college_type),
             updated_at = excluded.updated_at
     """, (user_id, payload.current_role, payload.years_experience, payload.education,
-            skills_json, interests_json, payload.career_goals, payload.location, now))
+            skills_json, interests_json, payload.career_goals, payload.location,
+            courses_json, locations_json, payload.max_budget, exams_json, 
+            payload.preferred_college_type, now))
     await db.commit()
-    return ProfileOut(user_id=user_id, current_role=payload.current_role,
-        years_experience=payload.years_experience, education=payload.education,
-        skills=payload.skills, interests=payload.interests,
-        career_goals=payload.career_goals, location=payload.location,
-        updated_at=datetime.fromisoformat(now))
+    
+    # Fetch the updated profile to return it accurately
+    async with db.execute("SELECT * FROM user_profiles WHERE user_id = ?", (user_id,)) as cur:
+        row = await cur.fetchone()
+    data = dict(row)
+    data["skills"] = json.loads(data.get("skills") or "[]")
+    data["interests"] = json.loads(data.get("interests") or "[]")
+    data["preferred_courses"] = json.loads(data.get("preferred_courses") or "[]")
+    data["preferred_locations"] = json.loads(data.get("preferred_locations") or "[]")
+    data["entrance_exams"] = json.loads(data.get("entrance_exams") or "{}")
+    
+    return ProfileOut(**data)
 
 @router.get("/users/{user_id}/profile", response_model=ProfileOut)
 async def get_profile(user_id: str, db: Connection = Depends(get_db)):
@@ -114,6 +134,9 @@ async def get_profile(user_id: str, db: Connection = Depends(get_db)):
     data = dict(row)
     data["skills"] = json.loads(data.get("skills") or "[]")
     data["interests"] = json.loads(data.get("interests") or "[]")
+    data["preferred_courses"] = json.loads(data.get("preferred_courses") or "[]")
+    data["preferred_locations"] = json.loads(data.get("preferred_locations") or "[]")
+    data["entrance_exams"] = json.loads(data.get("entrance_exams") or "{}")
     return ProfileOut(**data)
 
 @router.get("/users/by-email/{email}", response_model=UserOut)

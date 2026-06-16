@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onEditApiKey, highlightCloudSettings, onDeleteSession, onRenameSession, onLogout, isOpen, onClose }) {
+export default function Sidebar({ user, profile, sessions, activeSessionId, darkMode, toggleTheme, onNewSession, onSelectSession, onEditProfile, onEditCollege, onEditApiKey, highlightCloudSettings, onDeleteSession, onRenameSession, onLogout, isOpen, onClose }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
@@ -234,6 +234,33 @@ export default function Sidebar({ user, profile, sessions, activeSessionId, dark
               <span>Tip: {!profile?.career_goals ? 'Add goals for +20%' : !profile?.skills?.length ? 'Add skills for +20%' : 'Finish to maximize accuracy'}</span>
             </div>
           )}
+        </button>
+
+        <button 
+          onClick={onEditCollege}
+          className="glass-morphism"
+          style={{ 
+            width: '100%',
+            marginTop: '12px',
+            borderRadius:'16px', 
+            padding:'14px', 
+            cursor:'pointer', 
+            transition: 'all 0.3s', 
+            border: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: 'var(--text)'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.background = 'var(--surface)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface2)' }}
+        >
+          <span style={{ fontSize: '18px' }}>🎓</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700 }}>College Recommendation</div>
+            <div style={{ fontSize: '10px', color: 'var(--text3)' }}>Find your ideal institution</div>
+          </div>
         </button>
       </div>
 

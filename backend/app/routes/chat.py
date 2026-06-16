@@ -136,6 +136,19 @@ async def send_message(payload: ChatRequest, stream: bool = Query(False), use_hf
     )
     await db.commit()
 
+    # Fetch college data if relevant
+    colleges_context = []
+    if any(keyword in payload.message.lower() for keyword in ["college", "university", "admission", "fees", "placement"]):
+        from app.services.college_service import search_colleges
+        colleges_context = await search_colleges(
+            preferred_courses=profile.get("preferred_courses"),
+            preferred_locations=profile.get("preferred_locations"),
+            max_budget=profile.get("max_budget"),
+            preferred_college_type=profile.get("preferred_college_type")
+        )
+        if colleges_context and profile:
+            profile["retrieved_colleges"] = colleges_context
+
     if stream:
         return StreamingResponse(stream_generator(history, profile or {}, payload, asst_msg_id, reply_at, use_hf, use_lm, user_api_key), media_type="text/plain")
     else:

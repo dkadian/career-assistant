@@ -38,7 +38,30 @@ async def init_db():
                 career_goals TEXT,
                 location TEXT,
                 parsed_resume TEXT,
+                preferred_courses TEXT,   -- JSON array
+                preferred_locations TEXT, -- JSON array
+                max_budget INTEGER,
+                entrance_exams TEXT,      -- JSON object/array
+                preferred_college_type TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS colleges (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                type TEXT,                -- Govt/Private
+                location TEXT,
+                state TEXT,
+                courses TEXT,             -- JSON array of dicts
+                facilities TEXT,          -- JSON array
+                placement_stats TEXT,     -- JSON dict
+                scholarships TEXT,        -- JSON array
+                eligibility_criteria TEXT, -- JSON dict
+                entrance_exams_accepted TEXT, -- JSON array
+                is_blacklisted BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 

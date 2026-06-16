@@ -49,6 +49,31 @@ class UserProfile(Base):
     skills = Column(JSON, nullable=True)        # list of skills
     interests = Column(JSON, nullable=True)     # list of interests
     goals = Column(Text, nullable=True)
+    
+    preferred_courses = Column(JSON, nullable=True)
+    preferred_locations = Column(JSON, nullable=True)
+    max_budget = Column(Integer, nullable=True)
+    entrance_exams = Column(JSON, nullable=True)
+    preferred_college_type = Column(String, nullable=True)
+    
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     session = relationship("Session", back_populates="profile")
+
+
+class College(Base):
+    __tablename__ = "colleges"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    courses = Column(JSON, nullable=True)
+    facilities = Column(JSON, nullable=True)
+    placement_stats = Column(JSON, nullable=True)
+    scholarships = Column(JSON, nullable=True)
+    eligibility_criteria = Column(JSON, nullable=True)
+    entrance_exams_accepted = Column(JSON, nullable=True)
+    is_blacklisted = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

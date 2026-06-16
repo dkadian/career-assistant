@@ -65,10 +65,21 @@ async def foundry_reasoning(payload: ChatRequest, db: Connection = Depends(get_d
 
     orchestrator = FoundryOrchestrator()
 
+    # Fetch college data if relevant
+    colleges_context = []
+    if any(keyword in payload.message.lower() for keyword in ["college", "university", "admission", "fees", "placement"]):
+        from app.services.college_service import search_colleges
+        colleges_context = await search_colleges(
+            preferred_courses=profile.get("preferred_courses"),
+            preferred_locations=profile.get("preferred_locations"),
+            max_budget=profile.get("max_budget"),
+            preferred_college_type=profile.get("preferred_college_type")
+        )
+
     async def event_generator():
         full_response = ""
         try:
-            async for event in orchestrator.solve(payload.message, profile, user_api_key):
+            async for event in orchestrator.solve(payload.message, profile, user_api_key, context={"colleges": colleges_context}):
                 yield event
                 # Extract text if it's a chunk of the final response
                 if event.startswith("data: \""):

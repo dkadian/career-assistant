@@ -3,6 +3,7 @@ import { api } from './api'
 import AuthPage from './components/AuthPage'
 import ProfileModal from './components/ProfileModal'
 import ApiKeyModal from './components/ApiKeyModal'
+import CollegeRecommendationForm from './components/CollegeRecommendationForm'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea.jsx'
 
@@ -13,6 +14,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null)
   const [messages, setMessages] = useState([])
   const [showProfile, setShowProfile] = useState(false)
+  const [showCollegeForm, setShowCollegeForm] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
   const [selectedModel, setSelectedModel] = useState('off')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -165,6 +167,18 @@ export default function App() {
         <>
           {showProfile && <ProfileModal profile={profile} userId={user.id} onSave={p => { setProfile(p); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
           {showApiKey && <ApiKeyModal userId={user.id} onClose={() => setShowApiKey(false)} onSuccess={() => setUser({ ...user, has_api_key: true })} />}
+          {showCollegeForm && (
+            <CollegeRecommendationForm 
+              userId={user.id} 
+              profile={profile}
+              onComplete={p => { 
+                setProfile({ ...profile, ...p }); 
+                setShowCollegeForm(false);
+                // Removed automatic handleNewSession call
+              }} 
+              onClose={() => setShowCollegeForm(false)} 
+            />
+          )}
           
           {/* Mobile Backdrop */}
           {sidebarOpen && (
@@ -192,6 +206,7 @@ export default function App() {
             onNewSession={handleNewSession} 
             onSelectSession={s => { handleSelectSession(s); setSidebarOpen(false); }}
             onEditProfile={() => setShowProfile(true)} 
+            onEditCollege={() => setShowCollegeForm(true)}
             onEditApiKey={() => setShowApiKey(true)}
             highlightCloudSettings={(selectedModel === 'openrouter' || selectedModel === 'foundry') && !user?.has_api_key}
             onDeleteSession={handleDeleteSession}

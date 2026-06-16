@@ -60,27 +60,27 @@ function makeChatIllustration() {
 
 const featureCards = [
   {
-    title: 'Resume-to-Profile Guidance',
-    text: 'Upload a resume, capture skills automatically, and turn scattered experience into a career profile the AI can actually use.',
+    title: 'Personalised College Recommendations',
+    text: 'Find your ideal institution based on your academic scores, entrance ranks, budget constraints, and career aspirations.',
+  },
+  {
+    title: 'Intelligent Admissions Enquiry',
+    text: 'Ask detailed questions about fees, placement statistics, eligibility criteria, and facilities for thousands of colleges.',
   },
   {
     title: 'Personalised Career Conversations',
-    text: 'Get advice that reflects your role, goals, location, projects, and strengths instead of generic one-size-fits-all answers.',
-  },
-  {
-    title: 'Actionable Growth Plans',
-    text: 'From skill-gap analysis to interview preparation and transition strategy, each chat is designed to move you toward the next step.',
+    text: 'Get advice that reflects your role, goals, location, and strengths instead of generic one-size-fits-all answers.',
   },
 ]
 
 const journeySteps = [
-  'Create your account in seconds',
-  'Fill your profile or upload your resume',
-  'Ask career questions and get tailored guidance',
+  'Create your account and build your core profile',
+  'Input your academic scores for college matching',
+  'Explore ranked college suggestions based on budget',
   'Build a roadmap for roles, skills, and opportunities',
 ]
 
-const insightChips = ['Resume-aware AI', 'Skill extraction', 'Role-fit guidance', 'Interview prep', 'Growth roadmap']
+const insightChips = ['College Recommendation', 'Admissions AI', 'Skill extraction', 'Role-fit guidance', 'Interview prep']
 const profileIllustration = makeIllustration('#6366f1', '#22C55E', '#f43f5e')
 const roadmapIllustration = makeIllustration('#f43f5e', '#6366f1', '#22C55E')
 const heroSceneIllustration = makeSceneIllustration()
@@ -741,14 +741,14 @@ const carouselSlides = [
             <div style={s.heroGlow2} />
             <div style={s.heroTopGrid}>
               <div>
-            <div style={{ ...s.badge, animation: 'float 6s ease-in-out infinite' }}>Career Counselling Platform</div>
+            <div style={{ ...s.badge, animation: 'float 6s ease-in-out infinite' }}>Education & Career Counselling</div>
             <h1 style={s.sectionTitle}>
-              Turn resumes, skills, and <span className="text-gradient">career goals</span> into a sharper next move.
+              Navigate your <span className="text-gradient">education journey</span> with AI-powered precision.
             </h1>
             <p style={{ ...s.body, marginTop: '16px', opacity: 0.9 }}>
-              Pathfinder AI helps clients understand what they do, where they fit, and what to do next.
-              It reads profile details, uses resume context, and turns vague career questions into focused,
-              personalised advice.
+              Pathfinder AI helps you find the perfect college based on your scores and budget, while 
+              providing expert career guidance. From admissions enquiry to professional roadmap planning, 
+              get the insights you need for your next big move.
             </p>
             <div style={s.chipRow}>
               {insightChips.map(chip => <div key={chip} style={s.chip}>{chip}</div>)}
@@ -938,15 +938,15 @@ const carouselSlides = [
             <div style={s.statGrid}>
               <div style={s.statCard}>
                 <div style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: 700, marginBottom: '6px' }} >1</div>
-                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Build a profile with role, education, goals, and skills.</div>
+                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Input your entrance exam scores, preferred courses, and budget.</div>
               </div>
               <div style={s.statCard}>
                 <div style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: 700, marginBottom: '6px' }}>2</div>
-                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Upload a resume and let the system extract strengths and context.</div>
+                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Let AI filter thousands of institutions to find your best matches.</div>
               </div>
               <div style={s.statCard}>
                 <div style={{ color: 'var(--gold)', fontSize: '24px', fontWeight: 700, marginBottom: '6px' }}>3</div>
-                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Ask anything about jobs, skills, transitions, interviews, or growth.</div>
+                <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.5 }}>Ask about fees, placements, and facilities for a data-driven choice.</div>
               </div>
             </div>
 

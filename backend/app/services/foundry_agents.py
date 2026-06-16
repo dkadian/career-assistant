@@ -45,7 +45,7 @@ User Query: {user_query}
 
 Decompose this request into exactly 3 reasoning steps. 
 Respond ONLY with a valid JSON array of objects, where each object has "step_id", "agent_type", and "description".
-Agent types: "Researcher", "Analyst", "Coach".
+Agent types: "Researcher", "Analyst", "Coach", "CollegeAdvisor".
 
 Example:
 [
@@ -74,12 +74,14 @@ class ExpertAgent(FoundryAgent):
         roles = {
             "Researcher": "Industry Trend Specialist",
             "Analyst": "Career Gap Analyst",
-            "Coach": "Professional Development Coach"
+            "Coach": "Professional Development Coach",
+            "CollegeAdvisor": "Academic Admissions Specialist"
         }
         goals = {
             "Researcher": "Find and explain the latest industry developments and hiring patterns.",
             "Analyst": "Evaluate professional profiles against industry standards and identify specific gaps.",
-            "Coach": "Provide actionable, empathetic, and strategic advice for career growth."
+            "Coach": "Provide actionable, empathetic, and strategic advice for career growth.",
+            "CollegeAdvisor": "Recommend colleges based on academic profile, budget, and career goals, providing detailed insights into admissions and placements."
         }
         super().__init__(
             name=f"Foundry{agent_type}",
@@ -97,15 +99,19 @@ class SynthesisAgent(FoundryAgent):
             backlight="You take the output of multiple specialized agents and create a unified, polished response for the user."
         )
 
-    async def synthesize(self, user_query: str, results: List[Dict], profile: Optional[Dict] = None, user_api_key: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def synthesize(self, user_query: str, results: List[Dict], profile: Optional[Dict] = None, user_api_key: Optional[str] = None, context: Optional[Dict] = None) -> AsyncGenerator[str, None]:
         task = f"""
 Original User Request: {user_query}
 
 Insights gathered from Reasoning Steps:
 {json.dumps(results, indent=2)}
 
+Additional Context (including retrieved data):
+{json.dumps(context or {}, indent=2)}
+
 Please provide a final, comprehensive, and polished response to the user. 
 Use Markdown formatting, headings, and a professional tone.
+If colleges are provided in the context, rank and recommend them based on the user's goals and reasoning results.
 """
         # We use streaming for the final synthesis to give a better user experience
         async for chunk in get_ai_response([{"role": "user", "content": task}], profile=profile, stream=True, user_api_key=user_api_key):
@@ -117,7 +123,7 @@ class FoundryOrchestrator:
         self.planner = PlannerAgent()
         self.synthesizer = SynthesisAgent()
 
-    async def solve(self, user_query: str, profile: Optional[Dict] = None, user_api_key: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def solve(self, user_query: str, profile: Optional[Dict] = None, user_api_key: Optional[str] = None, context: Optional[Dict] = None) -> AsyncGenerator[str, None]:
         # Step 1: Planning
         yield "data: {\"status\": \"planning\", \"message\": \"Thinking... Decomposing your request into reasoning steps.\"}\n\n"
         plan = await self.planner.plan(user_query, profile, user_api_key)
@@ -130,7 +136,11 @@ class FoundryOrchestrator:
             yield f"data: {{\"status\": \"reasoning\", \"step\": {step['step_id']}, \"agent\": \"{agent_type}\", \"message\": \"{desc}\"}}\n\n"
             
             agent = ExpertAgent(agent_type)
-            result = await agent.execute(desc, context={"previous_results": results}, profile=profile, user_api_key=user_api_key)
+            # Combine provided context with reasoning results
+            agent_context = (context or {}).copy()
+            agent_context["previous_results"] = results
+            
+            result = await agent.execute(desc, context=agent_context, profile=profile, user_api_key=user_api_key)
             
             # NEW: Yield the result of the agent
             yield f"data: {{\"status\": \"completed_step\", \"step\": {step['step_id']}, \"agent\": \"{agent_type}\", \"result\": {json.dumps(result)}}}\n\n"
@@ -145,7 +155,11 @@ class FoundryOrchestrator:
         # Step 2: Synthesis
         yield "data: {\"status\": \"synthesizing\", \"message\": \"Consolidating insights into a final recommendation.\"}\n\n"
         
-        async for chunk in self.synthesizer.synthesize(user_query, results, profile, user_api_key):
+        # Consolidate all context for synthesis
+        final_context = (context or {}).copy()
+        final_context["reasoning_results"] = results
+        
+        async for chunk in self.synthesizer.synthesize(user_query, results, profile, user_api_key, context=final_context):
             if chunk:
                 yield f"data: {json.dumps(chunk)}\n\n"
         

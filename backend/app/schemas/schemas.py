@@ -27,10 +27,30 @@ class ProfileUpsert(BaseModel):
     interests: Optional[List[str]] = []
     career_goals: Optional[str] = None
     location: Optional[str] = None
+    preferred_courses: Optional[List[str]] = []
+    preferred_locations: Optional[List[str]] = []
+    max_budget: Optional[int] = None
+    entrance_exams: Optional[dict] = {}
+    preferred_college_type: Optional[str] = None
 
 class ProfileOut(ProfileUpsert):
     user_id: str
     updated_at: datetime
+
+class CollegeOut(BaseModel):
+    id: str
+    name: str
+    type: Optional[str] = None
+    location: Optional[str] = None
+    state: Optional[str] = None
+    courses: Optional[List[dict]] = []
+    facilities: Optional[List[str]] = []
+    placement_stats: Optional[dict] = {}
+    scholarships: Optional[List[str]] = []
+    eligibility_criteria: Optional[dict] = {}
+    entrance_exams_accepted: Optional[List[str]] = []
+    is_blacklisted: bool = False
+    created_at: datetime
 
 class SessionCreate(BaseModel):
     user_id: str
